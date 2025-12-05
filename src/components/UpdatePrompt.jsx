@@ -4,9 +4,8 @@ import { getLatestUpdate } from '../data/changelog';
 
 const UpdatePrompt = () => {
     const [showPrompt, setShowPrompt] = useState(false);
-    const [registration, setRegistration] = useState(null);
     const [showChangelog, setShowChangelog] = useState(false);
-    const hasShownPrompt = useRef(false); // Prevent duplicate prompts
+    const hasShownPrompt = useRef(false);
 
     useEffect(() => {
         const handleSWWaiting = (event) => {
@@ -29,7 +28,6 @@ const UpdatePrompt = () => {
             }
 
             hasShownPrompt.current = true;
-            setRegistration(event.detail.registration);
             setShowPrompt(true);
         };
 
@@ -41,10 +39,13 @@ const UpdatePrompt = () => {
     }, []);
 
     const handleUpdate = () => {
-        if (registration && registration.waiting) {
-            // Send message to waiting service worker to skip waiting
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        console.log('[UpdatePrompt] User clicked update');
+
+        // Use the global updateSW function from Vite PWA
+        if (window.updateServiceWorker) {
+            window.updateServiceWorker(true);
         }
+
         // Clear dismiss flag when user actively updates
         localStorage.removeItem('update-prompt-dismissed-until');
         setShowPrompt(false);
@@ -59,7 +60,6 @@ const UpdatePrompt = () => {
 
         console.log('[UpdatePrompt] User dismissed, will not show until:', dismissUntil);
         setShowPrompt(false);
-        // Don't reset hasShownPrompt so it won't show again in this session
     };
 
     const toggleChangelog = () => {

@@ -46,6 +46,11 @@ export default defineConfig({
             }
           }
         ]
+      },
+      // Add custom service worker behavior
+      injectRegister: 'inline',
+      devOptions: {
+        enabled: true
       }
     })
   ],
