@@ -89,21 +89,28 @@ const Settings = () => {
         if (!file) return;
 
         try {
+            console.log('Reading import file...');
             const text = await file.text();
             const data = JSON.parse(text);
+
+            console.log('Import data:', data);
 
             if (!confirm('기존 데이터를 모두 덮어쓰시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
                 event.target.value = '';
                 return;
             }
 
+            console.log('Starting import...');
             await importAllData(data);
-            setMessage({ type: 'success', text: '✅ 데이터가 성공적으로 복원되었습니다! 페이지를 새로고침하세요.' });
+            console.log('Import completed successfully');
+
+            setMessage({ type: 'success', text: '✅ 데이터가 성공적으로 복원되었습니다!' });
 
             setTimeout(() => {
                 window.location.reload();
-            }, 2000);
+            }, 1000);
         } catch (error) {
+            console.error('Import error:', error);
             setMessage({ type: 'error', text: `❌ 데이터 복원 실패: ${error.message}` });
         }
 
