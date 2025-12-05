@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './UpdatePrompt.css';
+import { getLatestUpdate } from '../data/changelog';
 
 const UpdatePrompt = () => {
     const [showPrompt, setShowPrompt] = useState(false);
     const [registration, setRegistration] = useState(null);
+    const [showChangelog, setShowChangelog] = useState(false);
     const hasShownPrompt = useRef(false); // Prevent duplicate prompts
 
     useEffect(() => {
@@ -60,15 +62,44 @@ const UpdatePrompt = () => {
         // Don't reset hasShownPrompt so it won't show again in this session
     };
 
+    const toggleChangelog = () => {
+        setShowChangelog(!showChangelog);
+    };
+
     if (!showPrompt) return null;
+
+    const latestUpdate = getLatestUpdate();
 
     return (
         <div className="update-prompt-overlay">
-            <div className="update-prompt">
+            <div className={`update-prompt ${showChangelog ? 'expanded' : ''}`}>
                 <div className="update-prompt-icon">🔄</div>
                 <div className="update-prompt-content">
                     <h3>새 버전이 있습니다!</h3>
                     <p>앱을 업데이트하여 최신 기능을 사용하세요.</p>
+
+                    <button className="changelog-toggle" onClick={toggleChangelog}>
+                        {showChangelog ? '△ 간단히 보기' : '▽ 상세내역 확인하기'}
+                    </button>
+
+                    {showChangelog && latestUpdate && (
+                        <div className="changelog-details">
+                            <div className="changelog-header">
+                                <h4>{latestUpdate.title}</h4>
+                                <span className="changelog-date">{latestUpdate.date}</span>
+                            </div>
+                            {latestUpdate.changes.map((section, idx) => (
+                                <div key={idx} className="changelog-section">
+                                    <h5>{section.category}</h5>
+                                    <ul>
+                                        {section.items.map((item, itemIdx) => (
+                                            <li key={itemIdx}>{item}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
                 <div className="update-prompt-actions">
                     <button className="update-btn" onClick={handleUpdate}>
