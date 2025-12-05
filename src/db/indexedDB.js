@@ -6,7 +6,7 @@
  */
 
 const DB_NAME = 'ClassDiaryDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Increment version to force recreation
 
 // Object Store names
 const STORES = {
@@ -24,10 +24,22 @@ const STORES = {
  */
 export const initDB = () => {
     return new Promise((resolve, reject) => {
+        // Check if IndexedDB is available
+        if (!window.indexedDB) {
+            console.error('IndexedDB is not supported in this browser');
+            reject(new Error('IndexedDB not supported'));
+            return;
+        }
+
         const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-        request.onerror = () => {
-            reject(new Error('Failed to open IndexedDB'));
+        request.onerror = (event) => {
+            console.error('IndexedDB error:', event.target.error);
+            reject(new Error(`Failed to open IndexedDB: ${event.target.error?.message || 'Unknown error'}`));
+        };
+
+        request.onblocked = () => {
+            console.warn('IndexedDB is blocked - please close other tabs with this app');
         };
 
         request.onsuccess = (event) => {
@@ -36,35 +48,26 @@ export const initDB = () => {
 
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
+            console.log('Upgrading IndexedDB from version', event.oldVersion, 'to', event.newVersion);
 
-            // Create object stores if they don't exist
-            if (!db.objectStoreNames.contains(STORES.STUDENTS)) {
-                db.createObjectStore(STORES.STUDENTS, { keyPath: 'classId' });
-            }
+            // Delete all existing object stores to recreate them
+            const existingStores = Array.from(db.objectStoreNames);
+            existingStores.forEach(storeName => {
+                console.log('Deleting old store:', storeName);
+                db.deleteObjectStore(storeName);
+            });
 
-            if (!db.objectStoreNames.contains(STORES.JOURNALS)) {
-                db.createObjectStore(STORES.JOURNALS, { keyPath: 'classId' });
-            }
+            // Create all object stores fresh
+            console.log('Creating fresh object stores...');
+            db.createObjectStore(STORES.STUDENTS, { keyPath: 'classId' });
+            db.createObjectStore(STORES.JOURNALS, { keyPath: 'classId' });
+            db.createObjectStore(STORES.ATTENDANCE, { keyPath: 'classId' });
+            db.createObjectStore(STORES.EVALUATIONS, { keyPath: 'classId' });
+            db.createObjectStore(STORES.FINALIZED_EVALUATIONS, { keyPath: 'classId' });
+            db.createObjectStore(STORES.API_KEYS, { keyPath: 'id' });
+            db.createObjectStore(STORES.SETTINGS, { keyPath: 'key' });
 
-            if (!db.objectStoreNames.contains(STORES.ATTENDANCE)) {
-                db.createObjectStore(STORES.ATTENDANCE, { keyPath: 'classId' });
-            }
-
-            if (!db.objectStoreNames.contains(STORES.EVALUATIONS)) {
-                db.createObjectStore(STORES.EVALUATIONS, { keyPath: 'classId' });
-            }
-
-            if (!db.objectStoreNames.contains(STORES.FINALIZED_EVALUATIONS)) {
-                db.createObjectStore(STORES.FINALIZED_EVALUATIONS, { keyPath: 'classId' });
-            }
-
-            if (!db.objectStoreNames.contains(STORES.API_KEYS)) {
-                db.createObjectStore(STORES.API_KEYS, { keyPath: 'id' });
-            }
-
-            if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
-                db.createObjectStore(STORES.SETTINGS, { keyPath: 'key' });
-            }
+            console.log('IndexedDB upgrade complete');
         };
     });
 };

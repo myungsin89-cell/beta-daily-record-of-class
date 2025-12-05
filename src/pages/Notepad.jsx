@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../components/Button';
 import { useSaveStatus } from '../context/SaveStatusContext';
 import { useClass } from '../context/ClassContext';
+import { useAuth } from '../context/AuthContext';
 
 const COLORS = [
     { name: '노란색', value: '#fef08a', shadow: '#facc15' },
@@ -74,7 +75,9 @@ const StickyNote = ({ note, onUpdate, onDelete, onDragStart, onDragEnd, onDragOv
 
 const Notepad = () => {
     const { currentClass } = useClass();
-    const classId = currentClass?.id || 'default';
+    const { user } = useAuth();
+    const rawClassId = currentClass?.id || 'default';
+    const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
     const [notes, setNotes] = useState([]);
     const [selectedColor, setSelectedColor] = useState(COLORS[0]);
     const [showColorPicker, setShowColorPicker] = useState(false);

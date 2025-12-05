@@ -15,8 +15,10 @@ export const ClassProvider = ({ children }) => {
     const { user } = useAuth();
     const [currentClass, setCurrentClass] = useState(null);
     const [classes, setClasses] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        setLoading(true);
         if (user) {
             // 사용자별 학급 목록 로드
             const classesKey = `${user.username}_classes`;
@@ -25,8 +27,9 @@ export const ClassProvider = ({ children }) => {
                 setClasses(JSON.parse(savedClasses));
             }
 
-            // 현재 선택된 학급 로드
-            const savedCurrentClass = localStorage.getItem('currentClass');
+            // 현재 선택된 학급 로드 (사용자별)
+            const currentClassKey = `${user.username}_currentClass`;
+            const savedCurrentClass = localStorage.getItem(currentClassKey);
             if (savedCurrentClass) {
                 setCurrentClass(JSON.parse(savedCurrentClass));
             }
@@ -34,6 +37,7 @@ export const ClassProvider = ({ children }) => {
             setClasses([]);
             setCurrentClass(null);
         }
+        setLoading(false);
     }, [user]);
 
     const createClass = (classData) => {
@@ -53,7 +57,8 @@ export const ClassProvider = ({ children }) => {
     };
 
     const selectClass = (classData) => {
-        localStorage.setItem('currentClass', JSON.stringify(classData));
+        const currentClassKey = `${user.username}_currentClass`;
+        localStorage.setItem(currentClassKey, JSON.stringify(classData));
         setCurrentClass(classData);
     };
 
@@ -66,19 +71,22 @@ export const ClassProvider = ({ children }) => {
 
         // 현재 선택된 학급이 삭제되는 경우
         if (currentClass?.id === classId) {
-            localStorage.removeItem('currentClass');
+            const currentClassKey = `${user.username}_currentClass`;
+            localStorage.removeItem(currentClassKey);
             setCurrentClass(null);
         }
     };
 
     const clearCurrentClass = () => {
-        localStorage.removeItem('currentClass');
+        const currentClassKey = `${user.username}_currentClass`;
+        localStorage.removeItem(currentClassKey);
         setCurrentClass(null);
     };
 
     const value = {
         currentClass,
         classes,
+        loading,
         createClass,
         selectClass,
         deleteClass,

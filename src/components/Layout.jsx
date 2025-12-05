@@ -56,9 +56,6 @@ const Layout = () => {
 
                         {/* Global Save Status Indicator */}
                         <div className="header-save-status">
-                            <span className={`status-icon ${isSaving ? 'saving' : lastSaved ? 'saved' : 'waiting'}`}>
-                                {isSaving ? '⏳' : lastSaved ? '✓' : '○'}
-                            </span>
                             <span className="status-text">{getTimeText()}</span>
                         </div>
                     </div>

@@ -4,6 +4,7 @@ import Card from '../components/Card';
 import MiniCalendar from '../components/MiniCalendar';
 import { useSaveStatus } from '../context/SaveStatusContext';
 import { useClass } from '../context/ClassContext';
+import { useAuth } from '../context/AuthContext';
 
 // TodoItem Component with Style Editor
 const TodoItem = ({ todo, index, dateStr, toggleTodo, deleteTodo, updateTodoStyle, updateTodoText, onDragStart, onDragOver, onDrop }) => {
@@ -177,7 +178,9 @@ const TodoItem = ({ todo, index, dateStr, toggleTodo, deleteTodo, updateTodoStyl
 
 const Dashboard = () => {
     const { currentClass } = useClass();
-    const classId = currentClass?.id || 'default';
+    const { user } = useAuth();
+    const rawClassId = currentClass?.id || 'default';
+    const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
     const [currentDate, setCurrentDate] = useState(new Date());
     const [todos, setTodos] = useState({});
     const [weeklyNotes, setWeeklyNotes] = useState({});

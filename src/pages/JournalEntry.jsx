@@ -1,115 +1,64 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import mammoth from 'mammoth';
 import Button from '../components/Button';
 import { useStudentContext } from '../context/StudentContext';
 import { useAPIKey } from '../context/APIKeyContext';
 import { useSaveStatus } from '../context/SaveStatusContext';
+import { useAuth } from '../context/AuthContext';
+import { useClass } from '../context/ClassContext';
 import { generateStudentEvaluation } from '../services/aiService';
 import './JournalEntry.css';
 
 // Hidden system instructions that are always included in AI evaluation
 const SYSTEM_INSTRUCTIONS = `
-[역할 및 페르소나 설정]
-당신은 학생들의 학교생활기록부 행동특성 및 종합의견을 작성하는 경력 10년 이상의 베테랑 담임교사입니다. 제공된 학생 관찰 내용을 바탕으로 전문적이고 깊이 있는 평가 글을 작성해야 합니다.
+# 역할 부여
+당신은 경력 10년 차 이상의 베테랑 담임교사입니다. 교육청 지침을 준수하여 생기부 '행동특성 및 종합의견'을 작성합니다.
 
-[매우 중요 - 학생 이름 사용 절대 금지]
-**학생의 이름을 절대로 언급하지 마십시오.**
-**평가 내용에 학생 이름, 성, 별명 등 어떠한 개인 식별 정보도 포함하지 마십시오.**
-**"김○○", "이학생", "OOO학생" 등의 표현도 절대 사용 금지입니다.**
-**바로 평가 내용으로 시작하십시오. 예: "성실하게 학교생활에 임하고 있으며..."**
+# 필수 제약 조건 (위반 시 즉시 재작성)
+1. **[주어 절대 금지]**: 문장은 '성실하게', '학급 규칙을' 등 바로 서술 내용으로 시작하며, 학생 이름, '학생은' 등 주어는 일절 사용하지 말 것.
+2. **분량**: 공백 포함 300자 내외 (250자 이상).
+3. **문체**: 미사여구를 뺀 객관적이고 전문적인 교육적 문체.
+4. **[형식 엄격 준수]**: 출력은 **단 하나의 연속된 문단(Single Paragraph)**이어야 하며, 줄 바꿈이나 문단 띄어쓰기를 **절대 사용하지 말 것**.
+5. **[★핵심 추가★ 부정적 내용 합성 금지]**: 입력 데이터에 **포함되지 않은** 부정적인 특성이나 부족한 점, 또는 개선이 필요한 점을 평가에 **절대 추가하거나 생성하지 말 것**. 오직 입력된 정보만을 바탕으로 서술할 것.
 
-[작성 목표 및 형식 규정]
-- 목표: 학생의 행동 발달 특성을 평가하고, 개선이 필요한 부분을 발전 가능성을 담아 긍정적으로 포장하여 서술합니다.
-- **길이: 반드시 공백 포함 300자 내외로 작성합니다. (최소 250자 이상)** 너무 짧게 작성하지 말고, 4-6개의 완전한 문장으로 구성하여 충분한 분량을 확보하십시오.
-- 문체: 문장 끝은 "~함", "~임", "~하고 있음"과 같이 간결하고 전문적인 종결어로 처리합니다.
-- 칭찬 수위: '뛰어난' 등 최고격 표현은 관찰된 사실이 명확하게 입증될 때만 사용하며, 대부분은 잠재력과 현재의 모습을 부드럽게 표현하여 긍정적인 의미를 유지합니다.
-- **입력 반영: 제공된 '누가기록'과 '추가 특이사항'을 반드시 내용에 포함시켜야 합니다. 없는 내용을 지어내지 마십시오.**
-- **출력 형식: 학생 이름 없이 바로 평가 내용으로 시작합니다.**
+# 작성 순서 (문장 구성 순서 엄격 준수)
+평가 내용은 반드시 다음 4단계 순서대로 구성되어야 한다.
+1. **[전체 특징]**: 성실성, 책임감 등 학생의 전반적인 태도 및 특징 서술.
+2. **[학습 관련]**: 수업 참여 태도, 과제 수행 능력, 학습 이해도 등 학업 관련 내용.
+3. **[교우 관계/인성]**: 친구 관계, 예의, 배려심 등 대인 관계 및 인성 관련 내용.
+4. **[마무리 서술 (필수)]**: 구체적 일화나 사례가 있다면 제시한다. 적절한 사례가 없다면, 학생의 전반적인 강점이나 학급 기여도를 종합적으로 요약하며 **현재형으로 끝맺음**한다.
 
-[글의 구성 순서]
-1. 학생의 전체적인 특성 및 장점 (성격, 태도 등) - 현재형으로 서술
-2. 수업 시간 태도 및 학습 참여 자세 (구체적 과목 언급 가능 시 포함) - 현재형으로 서술
-3. 교우 관계 및 공동체 생활에서의 모습 (리더십, 배려, 협력 등) - 현재형으로 서술
-4. 종합 의견 - **부정적 내용이 있었다면 순화 표현으로, 없다면 현재형으로 마무리**
+# 핵심 로직: 긍정/부정 내용에 따른 어미 결정 시스템 (엄격 준수)
+입력된 학생의 특성을 다음 두 가지 유형으로 분류하여 작성합니다.
 
-[평가 내용 분석 및 순화/출력 지침]
-1. **입력 내용 분석:** 입력된 관찰 내용의 각 문장을 다음 두 가지 주요 유형으로 분류하십시오:
-   * **A. 순화 필요 유형 (부정적 내용):** 개선 필요 사항, 미흡한 행동, 지적 사항, 문제 행동 등.
-   * **B. 현재 서술 유형 (긍정적/중립적 내용):** 현재 성취, 긍정적 특성, 모범적인 행동 등 이미 긍정적이거나 객관적인 사실.
+A 유형 (부정적 내용 → 순화)
+- 처리 방법: 반드시 **미래 지향적 기대 표현**으로 순화하여 작성할 것. (입력 데이터에 부정적 내용이 있을 경우에만 적용)
+- **사용 어미**: ~성장이 기대됨, ~발전이 기대됨, ~개선될 것으로 보임.
 
-2. **유형별 순화 및 출력 규칙:**
-   * **A 유형 (부정적 내용) 처리:**
-     * **반드시** 긍정적인 변화의 가능성을 시사하는 문장으로 **순화**하십시오.
-     * 미래 지향적 표현 사용: '~발전이 기대된다', '~성장이 기대된다', '~향상이 기대된다' 등
-     * 예시: "수업 시간에 집중하지 못함" → "앞으로 수업 집중도가 향상될 것으로 기대됨"
-   
-   * **B 유형 (긍정적/중립적 내용) 처리:**
-     * 현재의 성취나 특성을 직접적으로 서술하며 **완료형** 또는 **현재 진행형** 문장을 사용하십시오.
-     * 사용 가능한 종결어: '~하고 있음', '~함', '~보임', '~됨', '~나타남'
-     * 예시: "친구들과 잘 어울림" → "교우들과 원만하게 지내고 있음"
-     * **[절대 금지]** 이미 긍정적이거나 중립적인 내용에는 '~발전이 기대된다', '~성장이 기대된다', '~할 것으로 기대됨', '~보여줄 것이다' 등 어떠한 미래 지향적 표현도 절대 사용하지 마십시오.
+B 유형 (긍정적/중립적 내용 → 서술)
+- 처리 방법: 현재형으로 있는 그대로 객관적으로 서술할 것.
+- **사용 어미**: ~함, ~임, ~하고 있음, ~보임.
 
-3. **미래 지향적 표현 사용 조건 (매우 중요 - 반드시 준수):**
-   * **오직 A 유형(부정적 내용)을 순화할 때만** 미래 지향적 표현을 사용합니다.
-   * 입력된 관찰 내용에 **부정적 내용이 전혀 없고** 모두 긍정적/중립적 내용만 있다면:
-     * 평가 전체에서 '~발전이 기대된다', '~성장이 기대된다', '~향상이 기대된다', '~보여줄 것이다', '~할 것으로 기대됨' 등의 표현을 **단 한 번도 사용하지 마십시오**.
-     * 마지막 문장도 반드시 현재형으로 마무리하십시오.
-   * 긍정적인 학생의 평가는 현재의 모습을 있는 그대로 서술하며 '~함', '~하고 있음', '~보임'으로 마무리합니다.
-   
-4. **잘못된 예시 (절대 금지):**
-   ❌ "김○○ 학생은 성실하게 학교생활에 임하고 있음." (이름 포함 금지!)
-   ❌ "이학생은 원만한 교우 관계를 유지하고 있음." (이름 표현 금지!)
-   ❌ "원만한 교우 관계를 유지하며 공동체 활동에도 적극적으로 참여하는 바, 앞으로도 긍정적인 마음가짐을 바탕으로 더욱 발전된 모습을 보여줄 것이라 기대됨." (부정적 내용 없는데 미래형 사용 금지!)
-   ❌ "성실하게 학교생활에 임하고 있어 앞으로의 성장이 기대됨." (부정적 내용 없는데 미래형 사용 금지!)
-   ❌ "친구들과 잘 어울리며 앞으로도 좋은 모습을 보일 것으로 기대됨." (부정적 내용 없는데 미래형 사용 금지!)
-
-5. **올바른 예시 (긍정적 내용만 있을 경우):**
-   ✅ "성실하게 학교생활에 임하며 학급 규칙을 잘 준수하고 있음. 수업 시간에 집중하여 적극적으로 참여하는 모습을 보이고 있으며..."
-   ✅ "원만한 교우 관계를 유지하며 공동체 활동에도 적극적으로 참여하고 있음. 친구들과 협력하여 과제를 수행하는 모습이 인상적이며..."
-   ✅ "밝고 긍정적인 성격으로 학급 분위기 조성에 기여하고 있음. 교우들과 잘 어울리며 조화로운 관계를 유지하고 있음."
-
-6. **다양화 규칙 (A 유형 다수 시 발동):**
-   * **'A 유형(부정적 내용)'의 문장이 3개 이상**이거나, 전체 내용 중 **30% 이상**을 차지하는 경우에만 아래의 규칙을 적용합니다.
-   * **반복 방지:** '발전이 기대된다', '성장이 기대된다'와 같은 표현이 한 단락 내에서 **2회 이상 반복되지 않도록** 주의하십시오.
-   * **대안 표현 활용:** 다양한 어휘와 문장 구조를 사용하여 순화 문구를 생성하십시오.
-     * **권장 대안 표현:** ~ 잠재력을 보여주고 있음, ~ 개선 여지가 충분하며 긍정적 변화를 보이고 있음, ~ 앞으로의 변화가 주목됨, ~ 노력하는 모습이 인상적임, ~ 점진적인 향상이 관찰됨.
-
-[최종 출력 지침]
-- **[절대 금지] 학생의 이름, 성, 별명을 절대로 언급하지 마십시오. "OOO", "김○○", "이학생" 등도 모두 금지입니다.**
-- **바로 평가 내용으로 시작하십시오.** 예: "성실하게 학교생활에 임하며..."
-- 문장이 길지 않고 명료함.
-- **긍정적인 내용에는 '~함', '~임', '~보임', '~됨', '~나타남', '~하고 있음' 등의 현재형 종결어만 사용함.**
-- **부정적인 내용을 순화할 때만 '~발전이 기대됨', '~성장이 기대됨' 등의 미래형 종결어를 사용함.**
-- 강점은 구체적으로 서술하며, 약점이나 개선점은 위의 순화 규칙에 따라 처리함.
-- 평가의 시점이 객관적이고 관찰 중심적임.
-- 분석 및 지침이 적용된 자연스럽고 매끄러운 행동발달평가 문구를 완성하십시오.
-
-[최종 점검 체크리스트 - 출력 전 반드시 확인]
-작성한 평가를 출력하기 전에 다음을 반드시 확인하십시오:
-1. **[최우선] 학생 이름이나 개인 식별 정보가 포함되어 있지 않은가?** → 있다면 즉시 제거!
-2. **평가가 바로 내용으로 시작하는가?** (이름 없이)
-3. 입력된 내용에 부정적 내용이 있었는가?
-   - **없음** → 평가 전체에 '~기대됨', '~것이다', '~보여줄 것' 등의 미래형 표현이 **단 한 개도 없는지** 확인
-   - **있음** → 해당 부정적 내용만 순화했는지 확인
-4. 마지막 문장이 현재형('~함', '~하고 있음')으로 끝나는가? (부정적 내용이 없는 경우)
-5. 긍정적 내용에 미래형 표현을 사용하지 않았는가?
-
-[정보 부족 시 대처 방안]
-- 제공된 관찰 기록이 부족하거나 없는 경우에도 평가를 작성해야 합니다.
-- 이 경우 일반적이고 무난하며 긍정적인 표현을 사용하여 보통 수준의 학생에게 적절한 평가를 작성합니다.
-- **반드시 현재형 종결어를 사용하며, 이름 없이 바로 시작**: "성실하게 학교생활에 임하고 있음", "기본 생활 습관이 형성되어 있음", "학급 규칙을 준수하며 생활함", "교우들과 원만하게 지내고 있음", "주어진 과제를 성실히 수행함" 등의 표현을 활용합니다.
+# 최종 검토 및 출력 규칙 (가장 중요)
+1. **[미래형 표현 사용처 한정]**: 미래형 표현 ('~기대됨')은 **오직 A 유형(부정적 특성 순화)**을 서술하는 문장에서만 사용한다.
+2. **[결론 문장 작성 금지]**: 문단 전체를 요약하거나, 일반적인 형태의 **결론 문장을 절대 작성하지 말 것**.
+3. **[최종 문장 어미 점검]**: 문단의 **마지막 문장**이 **A 유형(부정 순화)**에 해당하지 않는다면, 무조건 **B 유형(현재형/서술형 어미)**으로 끝내야 한다.
+4. **입력 반영**: 제공된 '누가기록'과 '추가 특이사항'을 반드시 내용에 포함시키되, 없는 내용을 지어내지 말 것.
 `;
 
 
 const JournalEntry = () => {
     const { students, journals, addJournalEntry, evaluations, saveEvaluation, finalizedEvaluations, saveFinalizedEvaluation, attendance } = useStudentContext();
     const { hasAPIKey, isConnected } = useAPIKey();
+    const { user } = useAuth();
+    const { currentClass } = useClass();
     const navigate = useNavigate();
     const [selectedStudentId, setSelectedStudentId] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [entryContent, setEntryContent] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+    const [showGlobalSettings, setShowGlobalSettings] = useState(false);
     const [customInstructions, setCustomInstructions] = useState('');
     const [referenceFile, setReferenceFile] = useState(null);
     const [referenceFileContent, setReferenceFileContent] = useState('');
@@ -125,6 +74,30 @@ const JournalEntry = () => {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const autoSaveTimerRef = useRef(null);
 
+    // Load global AI settings from localStorage
+    useEffect(() => {
+        if (user && currentClass) {
+            const settingsKey = `${user.username}_${currentClass.id}_ai_settings`;
+            const savedSettings = localStorage.getItem(settingsKey);
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                setCustomInstructions(settings.customInstructions || '');
+                setReferenceFileContent(settings.referenceFileContent || '');
+            }
+        }
+    }, [user, currentClass]);
+
+    // Save global AI settings to localStorage
+    useEffect(() => {
+        if (user && currentClass) {
+            const settingsKey = `${user.username}_${currentClass.id}_ai_settings`;
+            const settings = {
+                customInstructions,
+                referenceFileContent
+            };
+            localStorage.setItem(settingsKey, JSON.stringify(settings));
+        }
+    }, [customInstructions, referenceFileContent, user, currentClass]);
 
     const handleAddEntry = () => {
         if (!selectedStudentId || !entryContent.trim()) return;
@@ -227,13 +200,26 @@ const JournalEntry = () => {
 
         setReferenceFile(file);
 
-        // Read file content
+        // Read file content based on file type
         try {
-            const text = await file.text();
+            let text = '';
+
+            if (file.name.endsWith('.txt')) {
+                // Text file - read as text
+                text = await file.text();
+            } else if (file.name.endsWith('.docx')) {
+                // Word document - extract text using mammoth
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                text = result.value;
+            } else {
+                throw new Error('지원하지 않는 파일 형식입니다.');
+            }
+
             setReferenceFileContent(text);
         } catch (error) {
             console.error('Failed to read file:', error);
-            alert('파일을 읽는 중 오류가 발생했습니다.');
+            alert('파일을 읽는 중 오류가 발생했습니다. 지원 형식: .txt, .docx');
             setReferenceFile(null);
             setReferenceFileContent('');
         }
@@ -421,7 +407,7 @@ const JournalEntry = () => {
 
                     <Button
                         variant="primary"
-                        onClick={() => navigate('/evaluation-view')}
+                        onClick={() => navigate('/evaluation')}
                         style={{ fontSize: '0.95rem' }}
                     >
                         📋 행동발달평가 확인
@@ -429,6 +415,226 @@ const JournalEntry = () => {
                 </div>
             </div>
 
+            <div style={{
+                marginBottom: '1.5rem',
+                border: '1px solid #fcd34d', // amber-300
+                borderRadius: '12px',
+                overflow: 'hidden',
+                backgroundColor: 'white',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                transition: 'box-shadow 0.2s ease'
+            }}>
+                <div
+                    onClick={() => setShowGlobalSettings(!showGlobalSettings)}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '1.25rem 1.5rem',
+                        cursor: 'pointer',
+                        backgroundColor: '#fffbeb', // amber-50
+                        transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#fef3c7'; // amber-100
+                        e.currentTarget.parentElement.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#fffbeb'; // amber-50
+                        e.currentTarget.parentElement.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
+                        <span style={{ fontSize: '1.75rem' }}>⚙️</span>
+                        <div>
+                            <h3 style={{ margin: 0, color: '#92400e', fontSize: '1.1rem', fontWeight: '600' }}>
+                                AI 평가 공통 설정
+                            </h3>
+                            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: '#b45309' }}>
+                                모든 학생의 AI 평가에 적용되는 어투와 지시사항을 설정하세요
+                            </p>
+                        </div>
+                    </div>
+                    <span style={{
+                        fontSize: '1.25rem',
+                        color: '#92400e',
+                        transform: showGlobalSettings ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.3s ease',
+                        display: 'inline-block'
+                    }}>
+                        ▼
+                    </span>
+                </div>
+
+                {showGlobalSettings && (
+                    <div style={{
+                        padding: '1.75rem 1.5rem',
+                        backgroundColor: 'white',
+                        borderTop: '1px solid #fcd34d'
+                    }}>
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                marginBottom: '0.625rem',
+                                color: '#92400e',
+                                fontWeight: '600',
+                                fontSize: '0.95rem'
+                            }}>
+                                📋 평가 작성 가이드
+                                <span style={{ fontSize: '0.75rem', color: '#78350f', fontWeight: 'normal' }}>
+                                    (가장 우선순위가 높은 설정입니다)
+                                </span>
+                            </label>
+                            <textarea
+                                className="journal-textarea"
+                                placeholder="예시: ~함, ~임 체로 종결하고 구체적인 사례를 들어 작성해주세요."
+                                value={customInstructions}
+                                onChange={(e) => setCustomInstructions(e.target.value)}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = '#f59e0b';
+                                    e.target.style.outline = '2px solid #fde68a';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#cbd5e1';
+                                    e.target.style.outline = 'none';
+                                }}
+                                style={{
+                                    minHeight: '100px',
+                                    fontSize: '0.9rem',
+                                    padding: '0.875rem',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '8px',
+                                    width: '100%',
+                                    resize: 'vertical',
+                                    transition: 'all 0.2s ease'
+                                }}
+                            />
+                        </div>
+
+                        <div>
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                marginBottom: '0.625rem',
+                                color: '#92400e',
+                                fontWeight: '600',
+                                fontSize: '0.95rem'
+                            }}>
+                                📄 어투 학습용 파일
+                                <span style={{ fontSize: '0.75rem', color: '#78350f', fontWeight: 'normal' }}>
+                                    (선생님의 이전 평가 예시를 업로드하세요)
+                                </span>
+                            </label>
+
+                            <div style={{ marginBottom: '0.5rem' }}>
+                                <input
+                                    type="file"
+                                    accept=".txt,.docx"
+                                    onChange={handleFileChange}
+                                    onFocus={(e) => {
+                                        e.target.style.borderColor = '#f59e0b';
+                                        e.target.style.outline = '2px solid #fde68a';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.borderColor = '#cbd5e1';
+                                        e.target.style.outline = 'none';
+                                    }}
+                                    style={{
+                                        padding: '0.625rem',
+                                        border: '1px solid #cbd5e1',
+                                        borderRadius: '8px',
+                                        width: '100%',
+                                        fontSize: '0.9rem',
+                                        transition: 'all 0.2s ease',
+                                        backgroundColor: '#fff'
+                                    }}
+                                />
+                                <div style={{
+                                    marginTop: '0.5rem',
+                                    fontSize: '0.85rem',
+                                    color: '#4b5563',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem'
+                                }}>
+                                    ✅ <strong>지원 가능 파일:</strong> .txt (메모장), .docx (워드)
+                                </div>
+                            </div>
+
+                            {referenceFile && (
+                                <div style={{
+                                    marginTop: '0.625rem',
+                                    padding: '0.625rem 0.875rem',
+                                    backgroundColor: '#fffbeb',
+                                    borderRadius: '6px',
+                                    fontSize: '0.875rem',
+                                    color: '#92400e',
+                                    border: '1px solid #fcd34d'
+                                }}>
+                                    ✅ <strong>{referenceFile.name}</strong> 업로드 완료!
+                                </div>
+                            )}
+
+                            {/* 파일 형식 가이드 - Simplified */}
+                            <div style={{ marginTop: '1rem' }}>
+                                <details style={{
+                                    backgroundColor: '#fff7ed', // orange-50
+                                    padding: '0.875rem',
+                                    borderRadius: '8px',
+                                    border: '1px solid #fed7aa' // orange-200
+                                }}>
+                                    <summary style={{
+                                        cursor: 'pointer',
+                                        fontWeight: '600',
+                                        color: '#ea580c', // orange-600
+                                        fontSize: '0.9rem',
+                                        userSelect: 'none',
+                                        outline: 'none'
+                                    }}>
+                                        📝 HWP(한글) 파일을 사용하고 싶으신가요?
+                                    </summary>
+
+                                    <div style={{ marginTop: '1rem', lineHeight: '1.6', fontSize: '0.9rem', color: '#431407' }}>
+                                        <div style={{ marginBottom: '0.75rem' }}>
+                                            한글(.hwp) 파일은 바로 사용할 수 없습니다. <br />
+                                            다음과 같이 <strong>Word(.docx)</strong> 형식으로 저장하여 올려주세요:
+                                        </div>
+
+                                        <ol style={{
+                                            marginLeft: '1.5rem',
+                                            marginTop: '0.5rem',
+                                            backgroundColor: 'white',
+                                            padding: '1rem 1rem 1rem 2.5rem',
+                                            borderRadius: '6px',
+                                            border: '1px solid #ffedd5'
+                                        }}>
+                                            <li style={{ marginBottom: '0.5rem' }}>한글 프로그램에서 파일을 엽니다.</li>
+                                            <li style={{ marginBottom: '0.5rem' }}>상단 메뉴의 <strong>[파일] &gt; [다른 이름으로 저장하기]</strong>를 클릭합니다.</li>
+                                            <li style={{ marginBottom: '0.5rem' }}>파일 형식을 <strong>MS Word 문서 (*.docx)</strong>로 선택합니다.</li>
+                                            <li>저장 후 생성된 파일을 이곳에 업로드하세요.</li>
+                                        </ol>
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+
+                        <div style={{
+                            marginTop: '1.25rem',
+                            padding: '0.875rem 1rem',
+                            backgroundColor: '#fffbeb',
+                            borderRadius: '8px',
+                            fontSize: '0.875rem',
+                            color: '#92400e',
+                            borderLeft: '4px solid #f59e0b'
+                        }}>
+                            💡 <strong>팁:</strong> 설정하신 내용은 자동으로 저장되며, 다음에 다시 입력할 필요가 없습니다.
+                        </div>
+                    </div>
+                )}
+            </div>
 
             <div className="journal-container">
                 <div className="student-selector">
@@ -452,7 +658,7 @@ const JournalEntry = () => {
                     {selectedStudentId ? (
                         <>
                             {/* AI Evaluation Section */}
-                            <div className="journal-form" style={{ marginBottom: '1rem', backgroundColor: '#f0f9ff', borderColor: '#bae6fd', transition: 'all 0.3s ease' }}>
+                            <div className="journal-form" style={{ marginBottom: '1rem', backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', transition: 'all 0.3s ease' }}>
                                 {/* Header */}
                                 <div
                                     className="flex justify-between items-center"
@@ -465,13 +671,13 @@ const JournalEntry = () => {
                                             transition: 'transform 0.3s ease',
                                             transform: isEvaluationExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
                                             fontSize: '1.1rem',
-                                            color: '#0369a1',
+                                            color: '#15803d',
                                             width: '20px',
                                             textAlign: 'center'
                                         }}>
                                             ▶
                                         </span>
-                                        <h3 style={{ color: '#0369a1', margin: 0 }}>🤖 AI 행동발달평가</h3>
+                                        <h3 style={{ color: '#15803d', margin: 0 }}>🤖 AI 행동발달평가</h3>
                                     </div>
                                     <div onClick={(e) => e.stopPropagation()}>
                                         <Button
@@ -486,7 +692,7 @@ const JournalEntry = () => {
 
                                 {/* Expanded Content */}
                                 {isEvaluationExpanded && (
-                                    <div style={{ marginTop: '1rem', borderTop: '1px solid #e0f2fe', paddingTop: '1rem' }}>
+                                    <div style={{ marginTop: '1rem', borderTop: '1px solid #dcfce7', paddingTop: '1rem' }}>
 
                                         {/* API Key Notice - Compact */}
                                         {!hasAPIKey && (
@@ -525,7 +731,7 @@ const JournalEntry = () => {
 
                                         {/* 1. Additional Notes (Moved to top) */}
                                         <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                            <label className="form-label" style={{ color: '#0369a1', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <label className="form-label" style={{ color: '#15803d', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                 📝 추가 특이사항
                                                 <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 'normal' }}>(선택)</span>
                                             </label>
@@ -538,65 +744,7 @@ const JournalEntry = () => {
                                             />
                                         </div>
 
-                                        {/* 2. Advanced Options (Moved below notes) */}
-                                        <div style={{ marginBottom: '1.5rem' }}>
-                                            <button
-                                                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    color: '#0369a1',
-                                                    fontSize: '0.9rem',
-                                                    cursor: 'pointer',
-                                                    padding: '0',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.5rem',
-                                                    fontWeight: '500'
-                                                }}
-                                            >
-                                                {showAdvancedOptions ? '▼ 상세 설정 닫기' : '▶ 상세 설정 (AI 요청사항, 참고자료)'}
-                                            </button>
-
-                                            {showAdvancedOptions && (
-                                                <div style={{ marginTop: '0.5rem', padding: '1rem', backgroundColor: 'white', borderRadius: 'var(--radius-md)', border: '1px solid #bae6fd' }}>
-                                                    <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                                        <label className="form-label" style={{ color: '#0369a1', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                            📋 평가 작성 가이드
-                                                            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'normal' }}>(평가 작성 시 이 가이드를 우선 반영합니다)</span>
-                                                        </label>
-                                                        <textarea
-                                                            className="journal-textarea"
-                                                            placeholder="예시: 구체적인 사례 중심으로 서술하고, 간결하고 명료한 문장으로 작성해주세요. 긍정적이고 따뜻한 어조를 유지하되 과장하지 말아주세요."
-                                                            value={customInstructions}
-                                                            onChange={(e) => setCustomInstructions(e.target.value)}
-                                                            style={{ minHeight: '80px', fontSize: '0.9rem' }}
-                                                        />
-                                                    </div>
-
-                                                    <div className="form-group">
-                                                        <label className="form-label" style={{ color: '#0369a1', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                            📄 어투 학습용 참고 자료
-                                                            <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'normal' }}>(선생님의 이전 평가 예시를 업로드하면 동일한 어투로 작성합니다)</span>
-                                                        </label>
-                                                        <input
-                                                            type="file"
-                                                            accept=".txt"
-                                                            onChange={handleFileChange}
-                                                            className="form-input"
-                                                            style={{ padding: '0.5rem' }}
-                                                        />
-                                                        {referenceFile && (
-                                                            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
-                                                                ✓ {referenceFile.name} (AI가 이 파일의 작성 스타일을 학습합니다)
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* 3. Result Area */}
+                                        {/* 2. Result Area */}
                                         {currentEvaluation && (
                                             <>
                                                 <div className="evaluation-content" style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '0.95rem', padding: '1rem', backgroundColor: 'white', borderRadius: '8px', marginBottom: '1rem', border: '1px solid #e2e8f0' }}>
@@ -608,7 +756,7 @@ const JournalEntry = () => {
                                                 <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
                                                         <span style={{ fontSize: '1.1rem' }}>✏️</span>
-                                                        <label className="form-label" style={{ color: '#0369a1', fontWeight: '600', margin: 0 }}>AI 평가 수정 요청</label>
+                                                        <label className="form-label" style={{ color: '#15803d', fontWeight: '600', margin: 0 }}>AI 평가 수정 요청</label>
                                                     </div>
                                                     <textarea
                                                         className="journal-textarea"

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
@@ -33,8 +33,12 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
+        // 사용자별 currentClass 삭제
+        if (user) {
+            const currentClassKey = `${user.username}_currentClass`;
+            localStorage.removeItem(currentClassKey);
+        }
         localStorage.removeItem('currentUser');
-        localStorage.removeItem('currentClass');
         setUser(null);
     };
 

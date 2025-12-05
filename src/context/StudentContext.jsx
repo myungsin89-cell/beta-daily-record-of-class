@@ -1,21 +1,30 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useClass } from './ClassContext';
+import { useAuth } from './AuthContext';
 import useIndexedDB from '../hooks/useIndexedDB';
 import { STORES } from '../db/indexedDB';
 
 const StudentContext = createContext();
 
+// Define initial values outside component to avoid recreating on each render
+const INITIAL_ARRAY = [];
+const INITIAL_OBJECT = {};
+
 export const useStudentContext = () => useContext(StudentContext); // eslint-disable-line react-refresh/only-export-components
 
 export const StudentProvider = ({ children }) => {
     const { currentClass } = useClass();
+    const { user } = useAuth();
     const classId = currentClass?.id || 'default';
+    const dataKey = user ? `${user.username}_${classId}` : classId;
 
-    const [students, setStudents] = useIndexedDB(STORES.STUDENTS, classId, []);
-    const [attendance, setAttendance] = useIndexedDB(STORES.ATTENDANCE, classId, {});
-    const [journals, setJournals] = useIndexedDB(STORES.JOURNALS, classId, {});
-    const [evaluations, setEvaluations] = useIndexedDB(STORES.EVALUATIONS, classId, {});
-    const [finalizedEvaluations, setFinalizedEvaluations] = useIndexedDB(STORES.FINALIZED_EVALUATIONS, classId, {});
+    const [students, setStudents, isLoadingStudents] = useIndexedDB(STORES.STUDENTS, dataKey, INITIAL_ARRAY);
+    const [attendance, setAttendance, isLoadingAttendance] = useIndexedDB(STORES.ATTENDANCE, dataKey, INITIAL_OBJECT);
+    const [journals, setJournals, isLoadingJournals] = useIndexedDB(STORES.JOURNALS, dataKey, INITIAL_OBJECT);
+    const [evaluations, setEvaluations, isLoadingEvaluations] = useIndexedDB(STORES.EVALUATIONS, dataKey, INITIAL_OBJECT);
+    const [finalizedEvaluations, setFinalizedEvaluations, isLoadingFinalized] = useIndexedDB(STORES.FINALIZED_EVALUATIONS, dataKey, INITIAL_OBJECT);
+
+    const isLoading = isLoadingStudents || isLoadingAttendance || isLoadingJournals || isLoadingEvaluations || isLoadingFinalized;
 
     const addStudent = (student) => {
         setStudents([...students, student]);
@@ -95,6 +104,7 @@ export const StudentProvider = ({ children }) => {
                 saveEvaluation,
                 finalizedEvaluations,
                 saveFinalizedEvaluation,
+                isLoading,
             }}
         >
             {children}

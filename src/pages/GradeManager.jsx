@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../components/Button';
 import { useClass } from '../context/ClassContext';
+import { useAuth } from '../context/AuthContext';
 import { useStudentContext } from '../context/StudentContext';
 import { useSaveStatus } from '../context/SaveStatusContext';
 import './GradeManager.css';
@@ -29,9 +30,11 @@ const DEFAULT_TEMPLATES = [
 
 const GradeManager = () => {
     const { currentClass } = useClass();
+    const { user } = useAuth();
     const { students } = useStudentContext();
     const { updateSaveStatus } = useSaveStatus();
-    const classId = currentClass?.id || 'default';
+    const rawClassId = currentClass?.id || 'default';
+    const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
 
     // 상태 관리
     const [criteriaTemplates, setCriteriaTemplates] = useState([]);
@@ -497,8 +500,6 @@ const GradeManager = () => {
                         const groupGrades = grades.filter(g => g.groupId === group.id)
                             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-                        if (groupGrades.length === 0) return null;
-
                         return (
                             <div
                                 key={group.id}
@@ -514,39 +515,51 @@ const GradeManager = () => {
                                     </div>
                                 </div>
                                 <div className="grade-grid">
-                                    {groupGrades.map(grade => {
-                                        const criteria = criteriaTemplates.find(c => c.id === grade.criteriaId);
-                                        const isScoreType = criteria?.evaluationType === 'score';
+                                    {groupGrades.length === 0 ? (
+                                        <div style={{
+                                            padding: '2rem',
+                                            textAlign: 'center',
+                                            color: '#64748b',
+                                            fontSize: '0.95rem',
+                                            width: '100%'
+                                        }}>
+                                            아직 등록된 성적이 없습니다.
+                                        </div>
+                                    ) : (
+                                        groupGrades.map(grade => {
+                                            const criteria = criteriaTemplates.find(c => c.id === grade.criteriaId);
+                                            const isScoreType = criteria?.evaluationType === 'score';
 
-                                        return (
-                                            <div
-                                                key={grade.id}
-                                                className="grade-card"
-                                                draggable
-                                                onDragStart={(e) => handleDragStart(e, grade.id)}
-                                                onDragEnd={handleDragEnd}
-                                                onClick={() => handleOpenGrade(grade.id)}
-                                            >
-                                                <div className="grade-card-header">
-                                                    <div className="grade-card-title">{grade.assessmentName}</div>
-                                                    <div className={`grade-card-badge ${isScoreType ? 'score' : 'steps'}`}>
-                                                        {isScoreType ? '점수제' : `${criteria?.levels || 5}단계`}
-                                                    </div>
-                                                </div>
-                                                <div className="grade-card-meta">
-                                                    <span>{new Date(grade.createdAt).toLocaleDateString()}</span>
-                                                    <span>{Object.keys(grade.studentGrades).length}명</span>
-                                                </div>
-                                                <button
-                                                    className="grade-card-delete"
-                                                    onClick={(e) => handleDeleteGrade(e, grade.id)}
-                                                    title="삭제"
+                                            return (
+                                                <div
+                                                    key={grade.id}
+                                                    className="grade-card"
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, grade.id)}
+                                                    onDragEnd={handleDragEnd}
+                                                    onClick={() => handleOpenGrade(grade.id)}
                                                 >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        );
-                                    })}
+                                                    <div className="grade-card-header">
+                                                        <div className="grade-card-title">{grade.assessmentName}</div>
+                                                        <div className={`grade-card-badge ${isScoreType ? 'score' : 'steps'}`}>
+                                                            {isScoreType ? '점수제' : `${criteria?.levels || 5}단계`}
+                                                        </div>
+                                                    </div>
+                                                    <div className="grade-card-meta">
+                                                        <span>{new Date(grade.createdAt).toLocaleDateString()}</span>
+                                                        <span>{Object.keys(grade.studentGrades).length}명</span>
+                                                    </div>
+                                                    <button
+                                                        className="grade-card-delete"
+                                                        onClick={(e) => handleDeleteGrade(e, grade.id)}
+                                                        title="삭제"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            );
+                                        })
+                                    )}
                                 </div>
                             </div>
                         );
@@ -575,25 +588,30 @@ const GradeManager = () => {
 
                         <div className="form-section">
                             <label className="form-label">그룹 (과목/분류)</label>
-                            <input
-                                type="text"
-                                className="form-input"
-                                placeholder="예: 국어, 수학"
-                                value={currentGrade.groupName}
-                                onChange={(e) => setCurrentGrade({ ...currentGrade, groupName: e.target.value })}
-                                list="existing-groups"
-                            />
-                            <div className="group-chips">
-                                {gradeGroups.map(group => (
-                                    <button
-                                        key={group.id}
-                                        className={`group-chip ${currentGrade.groupName === group.name ? 'active' : ''}`}
-                                        onClick={() => setCurrentGrade({ ...currentGrade, groupName: group.name })}
-                                    >
-                                        {group.name}
-                                    </button>
-                                ))}
-                            </div>
+                            {gradeGroups.length > 0 ? (
+                                <select
+                                    className="form-input"
+                                    value={currentGrade.groupName}
+                                    onChange={(e) => setCurrentGrade({ ...currentGrade, groupName: e.target.value })}
+                                >
+                                    <option value="">새 그룹 만들기...</option>
+                                    {gradeGroups.map(group => (
+                                        <option key={group.id} value={group.name}>
+                                            {group.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : null}
+                            {(!gradeGroups.length || !currentGrade.groupName || !gradeGroups.some(g => g.name === currentGrade.groupName)) && (
+                                <input
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="새 그룹명 입력 (예: 국어, 수학)"
+                                    value={gradeGroups.some(g => g.name === currentGrade.groupName) ? '' : currentGrade.groupName}
+                                    onChange={(e) => setCurrentGrade({ ...currentGrade, groupName: e.target.value })}
+                                    style={{ marginTop: gradeGroups.length > 0 ? '0.5rem' : '0' }}
+                                />
+                            )}
                         </div>
 
                         <div className="form-section">
@@ -717,9 +735,8 @@ const GradeManager = () => {
                             )}
                         </div>
 
-                        <div className="flex justify-end gap-sm" style={{ marginTop: '2rem' }}>
-                            <Button variant="secondary" onClick={() => setShowSetupModal(false)}>취소</Button>
-                            <Button variant="primary" onClick={handleSetupComplete}>입력 시작 →</Button>
+                        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
+                            <Button variant="primary" onClick={handleSetupComplete} style={{ minWidth: '200px' }}>입력 시작 →</Button>
                         </div>
                     </div>
                 </div>

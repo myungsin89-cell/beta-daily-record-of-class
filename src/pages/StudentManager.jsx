@@ -6,11 +6,15 @@ import { useStudentContext } from '../context/StudentContext';
 import './StudentManager.css';
 
 const StudentManager = () => {
-    const { students, addStudent, addStudents, removeStudent } = useStudentContext();
+    const { students, addStudent, addStudents, removeStudent, isLoading } = useStudentContext();
     const [name, setName] = useState('');
     const [attendanceNumber, setAttendanceNumber] = useState('');
     const [gender, setGender] = useState('남');
     const [uploadMessage, setUploadMessage] = useState('');
+
+    if (isLoading) {
+        return <div style={{ padding: '2rem', textAlign: 'center' }}>데이터를 불러오는 중...</div>;
+    }
 
     const handleAddStudent = (e) => {
         e.preventDefault();

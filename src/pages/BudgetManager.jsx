@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import Button from '../components/Button';
 import { formatNumberWithCommas, numberToKorean } from '../utils/formatters';
 import { useClass } from '../context/ClassContext';
+import { useAuth } from '../context/AuthContext';
 import './BudgetManager.css';
 
 const BudgetManager = () => {
     const { currentClass } = useClass();
-    const classId = currentClass?.id || 'default';
+    const { user } = useAuth();
+    const rawClassId = currentClass?.id || 'default';
+    const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
     const [budgets, setBudgets] = useState([]);
     const [selectedBudgetId, setSelectedBudgetId] = useState(null);
     const [newBudget, setNewBudget] = useState({ name: '', totalAmount: '' });

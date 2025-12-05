@@ -52,13 +52,15 @@ const Settings = () => {
     };
 
     const handleDeleteAPIKey = async () => {
-        if (!confirm('정말로 API 키를 삭제하시겠습니까? AI 기능을 사용할 수 없게 됩니다.')) {
+        if (!window.confirm('정말로 API 키를 삭제하시겠습니까? AI 기능을 사용할 수 없게 됩니다.')) {
             return;
         }
 
+        setMessage({ type: '', text: '' });
         const result = await deleteAPIKey();
 
         if (result.success) {
+            setInputKey(''); // Clear input field after successful deletion
             setMessage({ type: 'success', text: '✅ API 키가 삭제되었습니다.' });
         } else {
             setMessage({ type: 'error', text: `❌ ${result.error}` });
@@ -117,12 +119,6 @@ const Settings = () => {
                 </Button>
             </div>
 
-            {message.text && (
-                <div className={`message-banner ${message.type}`}>
-                    {message.text}
-                </div>
-            )}
-
             {/* AI Connection Section */}
             <div className="settings-section">
                 <h2>🤖 AI 연결 설정</h2>
@@ -153,13 +149,13 @@ const Settings = () => {
                             >
                                 {isTesting ? '테스트 중...' : '🔍 연결 테스트'}
                             </Button>
-                            <Button
-                                variant="danger"
+                            <button
+                                className="delete-api-button"
                                 onClick={handleDeleteAPIKey}
-                                size="small"
+                                type="button"
                             >
-                                🗑️ 삭제
-                            </Button>
+                                삭제
+                            </button>
                         </div>
                     )}
                 </div>
@@ -233,7 +229,7 @@ const Settings = () => {
                                 onClick={() => setShowKey(!showKey)}
                                 title={showKey ? '키 숨기기' : '키 보기'}
                             >
-                                {showKey ? '🙈' : '👁️'}
+                                {showKey ? '숨기기' : '보기'}
                             </button>
                         </div>
                         <Button
@@ -275,13 +271,29 @@ const Settings = () => {
                 </div>
             </div>
 
+            {/* Feedback Section */}
+            <div className="settings-section">
+                <h2>📝 수정 및 요청사항</h2>
+                <p className="section-description">
+                    개선이 필요한 부분이나 새로운 기능을 자유롭게 제안해주세요.
+                </p>
+                <a
+                    href="https://docs.google.com/forms/d/e/1FAIpQLSekXmDyk3mOjrxqRLCnSz8XHHabIUTgE3p1Sy4YJ0Uj-GPawA/viewform?usp=header"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="feedback-link-button"
+                >
+                    📮 피드백 보내기
+                </a>
+            </div>
+
             {/* App Info Section */}
             <div className="settings-section app-info-section">
                 <h2>ℹ️ 앱 정보</h2>
                 <div className="info-grid">
                     <div className="info-item">
                         <span className="info-label">버전</span>
-                        <span className="info-value">2.0.0 (PWA)</span>
+                        <span className="info-value">베타테스트</span>
                     </div>
                     <div className="info-item">
                         <span className="info-label">저장 방식</span>

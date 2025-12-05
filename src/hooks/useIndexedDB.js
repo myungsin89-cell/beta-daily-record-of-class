@@ -16,10 +16,14 @@ function useIndexedDB(storeName, key, initialValue) {
 
     // Load data from IndexedDB on mount
     useEffect(() => {
+        let isMounted = true;
+
         const loadData = async () => {
             try {
                 setIsLoading(true);
                 const result = await getData(storeName, key);
+
+                if (!isMounted) return;
 
                 if (result && result.data !== undefined) {
                     setStoredValue(result.data);
@@ -32,24 +36,34 @@ function useIndexedDB(storeName, key, initialValue) {
                     setStoredValue(initialValue);
                 }
             } catch (error) {
+                if (!isMounted) return;
                 console.error(`Failed to load data from ${storeName}:`, error);
                 setStoredValue(initialValue);
             } finally {
-                setIsLoading(false);
+                if (isMounted) {
+                    setIsLoading(false);
+                }
             }
         };
 
         loadData();
-    }, [storeName, key]); // Only run on mount or when key changes
+
+        return () => {
+            isMounted = false;
+        };
+    }, [storeName, key]); // Removed initialValue from dependencies to prevent infinite loops
 
     // Function to update value in both state and IndexedDB
     const setValue = useCallback(async (value) => {
         try {
-            // Allow value to be a function so we have same API as useState
-            const valueToStore = value instanceof Function ? value(storedValue) : value;
-
-            // Update React state
-            setStoredValue(valueToStore);
+            // Use functional setState to always get the latest storedValue
+            // This prevents race conditions and stale closure issues
+            let valueToStore;
+            setStoredValue((currentValue) => {
+                // Allow value to be a function so we have same API as useState
+                valueToStore = value instanceof Function ? value(currentValue) : value;
+                return valueToStore;
+            });
 
             // Save to IndexedDB
             await saveData(storeName, {
@@ -59,7 +73,8 @@ function useIndexedDB(storeName, key, initialValue) {
         } catch (error) {
             console.error(`Failed to save data to ${storeName}:`, error);
         }
-    }, [storeName, key, storedValue]);
+    }, [storeName, key]); // Removed storedValue from dependencies to prevent unnecessary recreations
+
 
     return [storedValue, setValue, isLoading];
 }

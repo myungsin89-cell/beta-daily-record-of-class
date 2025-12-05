@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStudentContext } from '../context/StudentContext';
 import { useClass } from '../context/ClassContext';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import './AssignmentManager.css';
 
@@ -8,7 +9,9 @@ import { useSaveStatus } from '../context/SaveStatusContext';
 
 const AssignmentManager = () => {
     const { currentClass } = useClass();
-    const classId = currentClass?.id || 'default';
+    const { user } = useAuth();
+    const rawClassId = currentClass?.id || 'default';
+    const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
     const { students } = useStudentContext();
     const [assignments, setAssignments] = useState([]);
     const [selectedAssignmentId, setSelectedAssignmentId] = useState(null);
