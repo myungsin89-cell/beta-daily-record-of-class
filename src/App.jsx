@@ -22,6 +22,7 @@ import GradeInput from './pages/GradeInput';
 import BudgetManager from './pages/BudgetManager';
 import Notepad from './pages/Notepad';
 import Settings from './pages/Settings';
+import UpdatePrompt from './components/UpdatePrompt';
 
 function App() {
   return (
@@ -64,6 +65,7 @@ function App() {
           </APIKeyProvider>
         </AuthProvider>
       </BrowserRouter>
+      <UpdatePrompt />
     </ErrorBoundary>
   );
 }

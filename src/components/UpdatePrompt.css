@@ -1,0 +1,136 @@
+.update-prompt-overlay {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    z-index: 3000;
+    animation: slideInRight 0.4s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.update-prompt {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    max-width: 360px;
+    border: 2px solid #10b981;
+}
+
+.update-prompt-icon {
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.update-prompt-content {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.update-prompt-content h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    color: #1f2937;
+}
+
+.update-prompt-content p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+.update-prompt-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.update-btn,
+.dismiss-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.update-btn {
+    background: #10b981;
+    color: white;
+}
+
+.update-btn:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.dismiss-btn {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.dismiss-btn:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+    .update-prompt-overlay {
+        left: 10px;
+        right: 10px;
+        bottom: 70px;
+    }
+
+    .update-prompt {
+        max-width: 100%;
+        padding: 1rem;
+    }
+
+    .update-prompt-icon {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .update-prompt-content h3 {
+        font-size: 1.1rem;
+    }
+
+    .update-prompt-content p {
+        font-size: 0.875rem;
+    }
+
+    .update-prompt-actions {
+        flex-direction: column;
+    }
+
+    .update-btn,
+    .dismiss-btn {
+        padding: 0.625rem;
+    }
+}
