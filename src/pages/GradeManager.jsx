@@ -9,6 +9,14 @@ import './GradeManager.css';
 // 기본 평가 기준 템플릿
 const DEFAULT_TEMPLATES = [
     {
+        id: 'template_score',
+        name: '점수제',
+        evaluationType: 'score',
+        maxScore: 100,
+        levels: 0,
+        labels: []
+    },
+    {
         id: 'template_3_level_shape',
         name: '3단계 (◎○△)',
         levels: 3,
