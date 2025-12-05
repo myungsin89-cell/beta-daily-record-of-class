@@ -1,13 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './UpdatePrompt.css';
 
 const UpdatePrompt = () => {
     const [showPrompt, setShowPrompt] = useState(false);
     const [registration, setRegistration] = useState(null);
+    const hasShownPrompt = useRef(false); // Prevent duplicate prompts
 
     useEffect(() => {
         const handleSWWaiting = (event) => {
             console.log('[UpdatePrompt] Service worker waiting detected');
+
+            // Check if user dismissed recently (within 24 hours)
+            const dismissedUntil = localStorage.getItem('update-prompt-dismissed-until');
+            if (dismissedUntil) {
+                const dismissTime = new Date(dismissedUntil);
+                if (new Date() < dismissTime) {
+                    console.log('[UpdatePrompt] User dismissed recently, not showing');
+                    return;
+                }
+            }
+
+            // Prevent duplicate prompts in the same session
+            if (hasShownPrompt.current) {
+                console.log('[UpdatePrompt] Prompt already shown in this session');
+                return;
+            }
+
+            hasShownPrompt.current = true;
             setRegistration(event.detail.registration);
             setShowPrompt(true);
         };
@@ -24,11 +43,21 @@ const UpdatePrompt = () => {
             // Send message to waiting service worker to skip waiting
             registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
+        // Clear dismiss flag when user actively updates
+        localStorage.removeItem('update-prompt-dismissed-until');
         setShowPrompt(false);
+        hasShownPrompt.current = false;
     };
 
     const handleDismiss = () => {
+        // Set dismiss flag for 24 hours
+        const dismissUntil = new Date();
+        dismissUntil.setHours(dismissUntil.getHours() + 24);
+        localStorage.setItem('update-prompt-dismissed-until', dismissUntil.toISOString());
+
+        console.log('[UpdatePrompt] User dismissed, will not show until:', dismissUntil);
         setShowPrompt(false);
+        // Don't reset hasShownPrompt so it won't show again in this session
     };
 
     if (!showPrompt) return null;
