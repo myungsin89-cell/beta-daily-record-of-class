@@ -21,8 +21,9 @@ const Login = () => {
             <div className="login-card">
                 <div className="login-header">
                     <div className="login-icon">📚</div>
-                    <h1>Class Journal</h1>
-                    <p>학급 일지 관리 시스템</p>
+                    <h1>학급일지</h1>
+                    <p className="subtitle">AI 기반 학생 기록 관리 시스템</p>
+                    <div className="decorative-line"></div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="login-form">
@@ -45,7 +46,12 @@ const Login = () => {
                 </form>
 
                 <div className="login-footer">
-                    <p>간편하게 이름만 입력하고 시작하세요</p>
+                    <div className="feature-badges">
+                        <span className="badge">🤖 AI 평가</span>
+                        <span className="badge">📊 자동 저장</span>
+                        <span className="badge">📱 PWA 지원</span>
+                    </div>
+                    <p className="welcome-text">간편하게 이름만 입력하고 시작하세요</p>
                 </div>
             </div>
         </div>
