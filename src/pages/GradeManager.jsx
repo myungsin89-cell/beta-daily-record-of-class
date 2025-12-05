@@ -9,22 +9,22 @@ import './GradeManager.css';
 // 기본 평가 기준 템플릿
 const DEFAULT_TEMPLATES = [
     {
-        id: 'template_3_level_1',
+        id: 'template_3_level_shape',
+        name: '3단계 (◎○△)',
+        levels: 3,
+        labels: ['◎', '○', '△']
+    },
+    {
+        id: 'template_3_level_text',
         name: '3단계 (상/중/하)',
         levels: 3,
         labels: ['상', '중', '하']
     },
     {
-        id: 'template_5_level_1',
-        name: '5단계 (매우우수~매우미흡)',
+        id: 'template_5_level_korean',
+        name: '5단계 (수우미양가)',
         levels: 5,
-        labels: ['매우우수', '우수', '보통', '미흡', '매우미흡']
-    },
-    {
-        id: 'template_5_level_2',
-        name: '5단계 (A~E)',
-        levels: 5,
-        labels: ['A', 'B', 'C', 'D', 'E']
+        labels: ['수', '우', '미', '양', '가']
     }
 ];
 
@@ -618,18 +618,18 @@ const GradeManager = () => {
                             <label className="form-label">평가 기준 설정</label>
                             <div className="type-selector">
                                 <div
-                                    className={`type-card ${!currentGrade.useExistingCriteria ? 'active' : ''}`}
-                                    onClick={() => setCurrentGrade({ ...currentGrade, useExistingCriteria: false })}
-                                >
-                                    <span className="type-icon">✨</span>
-                                    <span className="type-title">새 기준 만들기</span>
-                                </div>
-                                <div
                                     className={`type-card ${currentGrade.useExistingCriteria ? 'active' : ''}`}
                                     onClick={() => setCurrentGrade({ ...currentGrade, useExistingCriteria: true })}
                                 >
                                     <span className="type-icon">📋</span>
                                     <span className="type-title">기존 기준 사용</span>
+                                </div>
+                                <div
+                                    className={`type-card ${!currentGrade.useExistingCriteria ? 'active' : ''}`}
+                                    onClick={() => setCurrentGrade({ ...currentGrade, useExistingCriteria: false })}
+                                >
+                                    <span className="type-icon">✨</span>
+                                    <span className="type-title">새 기준 만들기</span>
                                 </div>
                             </div>
 
@@ -664,16 +664,16 @@ const GradeManager = () => {
                                         <label className="form-label">평가 방식</label>
                                         <div className="type-selector compact">
                                             <div
-                                                className={`type-card ${currentGrade.evaluationType === 'steps' ? 'active' : ''}`}
-                                                onClick={() => setCurrentGrade({ ...currentGrade, evaluationType: 'steps' })}
-                                            >
-                                                <span className="type-title">단계별 평가</span>
-                                            </div>
-                                            <div
                                                 className={`type-card ${currentGrade.evaluationType === 'score' ? 'active' : ''}`}
                                                 onClick={() => setCurrentGrade({ ...currentGrade, evaluationType: 'score' })}
                                             >
                                                 <span className="type-title">점수제</span>
+                                            </div>
+                                            <div
+                                                className={`type-card ${currentGrade.evaluationType === 'steps' ? 'active' : ''}`}
+                                                onClick={() => setCurrentGrade({ ...currentGrade, evaluationType: 'steps' })}
+                                            >
+                                                <span className="type-title">단계별 평가</span>
                                             </div>
                                         </div>
                                     </div>
