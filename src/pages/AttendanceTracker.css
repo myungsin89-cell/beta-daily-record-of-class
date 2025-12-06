@@ -161,9 +161,22 @@
     font-weight: 600;
 }
 
+.calendar-day.holiday-day .day-number {
+    color: #f97316;
+    font-weight: 700;
+}
+
 .day-number {
     font-size: 0.9rem;
     margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.holiday-icon {
+    font-size: 0.6rem;
+    line-height: 1;
 }
 
 .record-indicator {

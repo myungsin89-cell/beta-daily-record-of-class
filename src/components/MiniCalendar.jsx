@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const MiniCalendar = ({ todos, onDateClick }) => {
+const MiniCalendar = ({ todos, onDateClick, holidays = [] }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
     // 날짜를 YYYY-MM-DD 형식으로 변환
@@ -77,6 +77,24 @@ const MiniCalendar = ({ todos, onDateClick }) => {
         return dayTodos.filter(todo => todo.completed).length;
     };
 
+    const isHoliday = (date) => {
+        const dateStr = formatDateLocal(date);
+        return holidays.some(h => {
+            const holidayDate = typeof h === 'string' ? h : h.date;
+            return holidayDate === dateStr;
+        });
+    };
+
+    const getHolidayName = (date) => {
+        const dateStr = formatDateLocal(date);
+        const holiday = holidays.find(h => {
+            const holidayDate = typeof h === 'string' ? h : h.date;
+            return holidayDate === dateStr;
+        });
+        if (!holiday) return '';
+        return typeof holiday === 'string' ? '공휴일' : holiday.name || '공휴일';
+    };
+
     return (
         <div className="mini-calendar">
             {/* Header */}
@@ -118,14 +136,17 @@ const MiniCalendar = ({ todos, onDateClick }) => {
                     const pendingCount = todoCount - completedCount;
                     const dayOfWeek = date.getDay();
                     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                    const isHolidayDate = isHoliday(date);
+                    const holidayName = isHolidayDate ? getHolidayName(date) : '';
 
                     return (
                         <div
                             key={index}
                             className={`mini-calendar-day ${!isCurrentMonth(date) ? 'other-month' : ''} ${
                                 isToday(date) ? 'today' : ''
-                            } ${todoCount > 0 ? 'has-todos' : ''} ${isWeekend ? 'weekend-day' : ''}`}
+                            } ${todoCount > 0 ? 'has-todos' : ''} ${isWeekend ? 'weekend-day' : ''} ${isHolidayDate ? 'holiday-day' : ''}`}
                             onClick={() => handleDateClick(date)}
+                            title={holidayName}
                         >
                             <div className="mini-day-number">{date.getDate()}</div>
                             {todoCount > 0 && (
@@ -268,6 +289,11 @@ const MiniCalendar = ({ todos, onDateClick }) => {
 
                 .mini-calendar-day.weekend-day .mini-day-number {
                     color: #ef4444;
+                }
+
+                .mini-calendar-day.holiday-day .mini-day-number {
+                    color: #ef4444;
+                    font-weight: 700;
                 }
 
                 .mini-day-number {

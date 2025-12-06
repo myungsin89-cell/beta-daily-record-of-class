@@ -5,6 +5,7 @@ import MiniCalendar from '../components/MiniCalendar';
 import { useSaveStatus } from '../context/SaveStatusContext';
 import { useClass } from '../context/ClassContext';
 import { useAuth } from '../context/AuthContext';
+import { useStudentContext } from '../context/StudentContext';
 
 // TodoItem Component with Style Editor
 const TodoItem = ({ todo, index, dateStr, toggleTodo, deleteTodo, updateTodoStyle, updateTodoText, onDragStart, onDragOver, onDrop }) => {
@@ -179,6 +180,7 @@ const TodoItem = ({ todo, index, dateStr, toggleTodo, deleteTodo, updateTodoStyl
 const Dashboard = () => {
     const { currentClass } = useClass();
     const { user } = useAuth();
+    const { holidays } = useStudentContext();
     const rawClassId = currentClass?.id || 'default';
     const classId = user ? `${user.username}_${rawClassId}` : rawClassId;
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -442,7 +444,7 @@ const Dashboard = () => {
                         >
                             ×
                         </button>
-                        <MiniCalendar todos={todos} onDateClick={handleDateClick} />
+                        <MiniCalendar todos={todos} onDateClick={handleDateClick} holidays={holidays} />
                     </div>
                 </div>
             )}

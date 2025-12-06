@@ -7,7 +7,7 @@ import { formatDateToString } from '../utils/dateUtils';
 import './AttendanceTracker.css';
 
 const AttendanceTracker = () => {
-    const { students, attendance, updateAttendance } = useStudentContext();
+    const { students, attendance, updateAttendance, holidays } = useStudentContext();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(formatDateToString(new Date()));
     const [reasons, setReasons] = useState({});
@@ -220,6 +220,24 @@ const AttendanceTracker = () => {
         setSelectedDate(formatDateToString(date));
     };
 
+    const isHoliday = (date) => {
+        const dateStr = formatDateToString(date);
+        return holidays.some(h => {
+            const holidayDate = typeof h === 'string' ? h : h.date;
+            return holidayDate === dateStr;
+        });
+    };
+
+    const getHolidayName = (date) => {
+        const dateStr = formatDateToString(date);
+        const holiday = holidays.find(h => {
+            const holidayDate = typeof h === 'string' ? h : h.date;
+            return holidayDate === dateStr;
+        });
+        if (!holiday) return '';
+        return typeof holiday === 'string' ? '공휴일' : holiday.name || '공휴일';
+    };
+
     const formatSelectedDate = () => {
         const [year, month, day] = selectedDate.split('-').map(Number);
         const date = new Date(year, month - 1, day);
@@ -354,14 +372,20 @@ const AttendanceTracker = () => {
                                         const isToday = dateKey === today;
                                         const hasRecords = hasAttendanceRecords(day.date);
                                         const specialStudents = getSpecialStatusStudents(day.date);
+                                        const isHolidayDate = isHoliday(day.date);
+                                        const holidayName = isHolidayDate ? getHolidayName(day.date) : '';
 
                                         return (
                                             <div
                                                 key={index}
-                                                className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
+                                                className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${isHolidayDate ? 'holiday-day' : ''}`}
                                                 onClick={() => day.isCurrentMonth && handleDateClick(day.date)}
+                                                title={holidayName}
                                             >
-                                                <span className="day-number">{day.date.getDate()}</span>
+                                                <span className="day-number">
+                                                    {day.date.getDate()}
+                                                    {isHolidayDate && <span className="holiday-icon">🎉</span>}
+                                                </span>
                                                 {hasRecords && <span className="record-indicator">●</span>}
                                                 {specialStudents.length > 0 && (
                                                     <div className="special-status-names">
