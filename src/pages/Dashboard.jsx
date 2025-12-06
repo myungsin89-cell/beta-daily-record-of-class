@@ -275,6 +275,17 @@ const Dashboard = () => {
         setShowMiniCalendar(false); // 날짜 선택 후 달력 닫기
     };
 
+    // 공휴일 확인 함수
+    const getHolidayInfo = (date) => {
+        const dateStr = formatDateLocal(date);
+        const holiday = holidays.find(h => {
+            const holidayDate = typeof h === 'string' ? h : h.date;
+            return holidayDate === dateStr;
+        });
+        if (!holiday) return null;
+        return typeof holiday === 'string' ? { date: holiday, name: '공휴일' } : holiday;
+    };
+
     // Todo Handlers
     const addTodo = (dateStr, text) => {
         if (!text.trim()) return;
@@ -458,6 +469,7 @@ const Dashboard = () => {
                     const dayTodos = todos[dateStr] || [];
                     const dayName = day.toLocaleDateString('ko-KR', { weekday: 'short' });
                     const dateNum = day.getDate();
+                    const holidayInfo = getHolidayInfo(day);
 
                     return (
                         <div key={dateStr} className={`day-column ${isToday ? 'today' : ''}`}>
@@ -465,6 +477,11 @@ const Dashboard = () => {
                                 <span className="day-name">{dayName}</span>
                                 <span className="day-num">{dateNum}</span>
                             </div>
+                            {holidayInfo && (
+                                <div className="holiday-badge">
+                                    🎉 {holidayInfo.name}
+                                </div>
+                            )}
 
                             <div className="todo-list">
                                 {Array.isArray(dayTodos) && dayTodos.map((todo, index) => (
@@ -518,6 +535,11 @@ const Dashboard = () => {
                                 <span>토</span>
                                 <span className="weekend-date-num">{weekDays[5].getDate()}일</span>
                             </div>
+                            {getHolidayInfo(weekDays[5]) && (
+                                <div className="holiday-badge weekend-holiday-badge">
+                                    🎉 {getHolidayInfo(weekDays[5]).name}
+                                </div>
+                            )}
                             <div className="todo-list weekend-todo-list">
                                 {Array.isArray(todos[formatDateLocal(weekDays[5])]) && todos[formatDateLocal(weekDays[5])].map((todo, index) => (
                                     <TodoItem
@@ -558,6 +580,11 @@ const Dashboard = () => {
                                 <span>일</span>
                                 <span className="weekend-date-num">{weekDays[6].getDate()}일</span>
                             </div>
+                            {getHolidayInfo(weekDays[6]) && (
+                                <div className="holiday-badge weekend-holiday-badge">
+                                    🎉 {getHolidayInfo(weekDays[6]).name}
+                                </div>
+                            )}
                             <div className="todo-list weekend-todo-list">
                                 {Array.isArray(todos[formatDateLocal(weekDays[6])]) && todos[formatDateLocal(weekDays[6])].map((todo, index) => (
                                     <TodoItem
@@ -649,6 +676,25 @@ const Dashboard = () => {
                 .day-column.today .day-header {
                     background: #e0f2fe;
                     color: var(--color-primary);
+                }
+
+                .holiday-badge {
+                    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+                    color: #991b1b;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    padding: 0.35rem 0.6rem;
+                    border-radius: 6px;
+                    margin: 0.5rem 0.75rem 0.25rem 0.75rem;
+                    text-align: center;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+                    border: 1px solid #fecaca;
+                }
+
+                .weekend-holiday-badge {
+                    margin: 0.25rem 0.5rem;
+                    font-size: 0.7rem;
+                    padding: 0.25rem 0.5rem;
                 }
 
                 .weekend-content {
