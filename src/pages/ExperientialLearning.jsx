@@ -6,9 +6,10 @@ import * as XLSX from 'xlsx';
 import './ExperientialLearning.css';
 
 const ExperientialLearning = () => {
-    const { students, attendance, fieldTrips, saveFieldTripMetadata, holidays } = useStudentContext();
+    const { students, attendance, fieldTrips, saveFieldTripMetadata, updateAttendance, holidays } = useStudentContext();
     const { currentClass } = useClass();
     const [sortConfig, setSortConfig] = useState({ key: 'application', direction: 'asc' });
+    const [isEditMode, setIsEditMode] = useState(false);
 
     // Process data to find field trips
     const tripData = useMemo(() => {
@@ -73,6 +74,7 @@ const ExperientialLearning = () => {
                         affiliation: affiliation,
                         startDate: group.startDate,
                         endDate: group.endDate,
+                        allDates: group.allDates,
                         startFormatted,
                         endFormatted,
                         dateRange: `${startFormatted} ~ ${endFormatted}`,
@@ -117,6 +119,26 @@ const ExperientialLearning = () => {
         saveFieldTripMetadata(studentId, updatedMetadata);
     };
 
+    const handleDeleteTrip = (trip) => {
+        const confirmMessage = `${trip.studentName}의 체험학습 (${trip.dateRange})을 삭제하시겠습니까?\n\n출석 체크에서도 모두 제거됩니다.`;
+
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        // 1. Delete attendance records for all dates
+        trip.allDates.forEach(date => {
+            updateAttendance(date, trip.studentId, null);
+        });
+
+        // 2. Delete field trip metadata
+        const studentTrips = fieldTrips[trip.studentId] || {};
+        const updatedMetadata = { ...studentTrips };
+        delete updatedMetadata[trip.id];
+
+        saveFieldTripMetadata(trip.studentId, updatedMetadata);
+    };
+
     const handleExport = () => {
         const exportData = tripData.map((trip, index) => ({
             '순': index + 1,
@@ -142,9 +164,17 @@ const ExperientialLearning = () => {
         <div className="experiential-learning-container">
             <div className="header-section">
                 <h1>🚌 체험학습 관리</h1>
-                <button className="export-btn" onClick={handleExport}>
-                    📥 엑셀 다운로드
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                        className={`edit-mode-btn ${isEditMode ? 'active' : ''}`}
+                        onClick={() => setIsEditMode(!isEditMode)}
+                    >
+                        {isEditMode ? '✓ 완료' : '✏️ 편집'}
+                    </button>
+                    <button className="export-btn" onClick={handleExport}>
+                        📥 엑셀 다운로드
+                    </button>
+                </div>
             </div>
 
             <div className="info-note">
@@ -166,6 +196,7 @@ const ExperientialLearning = () => {
                             <th width="150">장소(기관)</th>
                             <th>활동내용</th>
                             <th width="80">서류완결</th>
+                            {isEditMode && <th width="80">삭제</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -211,6 +242,17 @@ const ExperientialLearning = () => {
                                         onChange={(e) => handleMetadataChange(trip.id, trip.studentId, 'isSubmitted', e.target.checked)}
                                     />
                                 </td>
+                                {isEditMode && (
+                                    <td className="text-center">
+                                        <button
+                                            className="delete-btn"
+                                            onClick={() => handleDeleteTrip(trip)}
+                                            title="삭제"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </td>
+                                )}
                             </tr>
                         ))}
                     </tbody>

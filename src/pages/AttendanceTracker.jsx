@@ -3,12 +3,13 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import { useStudentContext } from '../context/StudentContext';
 import ExperientialLearning from './ExperientialLearning';
+import { formatDateToString } from '../utils/dateUtils';
 import './AttendanceTracker.css';
 
 const AttendanceTracker = () => {
     const { students, attendance, updateAttendance } = useStudentContext();
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(formatDateToString(new Date()));
     const [reasons, setReasons] = useState({});
     const [showMonthlySummary, setShowMonthlySummary] = useState(false);
     const [activeTab, setActiveTab] = useState('attendance'); // 'attendance' or 'fieldtrips'
@@ -132,7 +133,7 @@ const AttendanceTracker = () => {
 
     // Get students with special status for a specific date
     const getSpecialStatusStudents = (date) => {
-        const dateKey = date.toISOString().split('T')[0];
+        const dateKey = formatDateToString(date);
         const dayAttendance = attendance[dateKey] || {};
 
         const specialStudents = [];
@@ -167,7 +168,7 @@ const AttendanceTracker = () => {
 
         for (let day = 1; day <= lastDay; day++) {
             const date = new Date(year, month, day);
-            const dateKey = date.toISOString().split('T')[0];
+            const dateKey = formatDateToString(date);
             const dayAttendance = attendance[dateKey] || {};
 
             const specialRecords = [];
@@ -208,19 +209,20 @@ const AttendanceTracker = () => {
     };
 
     const calendarDays = getCalendarDays();
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateToString(new Date());
 
     const hasAttendanceRecords = (date) => {
-        const dateKey = date.toISOString().split('T')[0];
+        const dateKey = formatDateToString(date);
         return attendance[dateKey] && Object.keys(attendance[dateKey]).length > 0;
     };
 
     const handleDateClick = (date) => {
-        setSelectedDate(date.toISOString().split('T')[0]);
+        setSelectedDate(formatDateToString(date));
     };
 
     const formatSelectedDate = () => {
-        const date = new Date(selectedDate);
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
         return date.toLocaleDateString('ko-KR', {
             year: 'numeric',
             month: 'long',
@@ -347,7 +349,7 @@ const AttendanceTracker = () => {
                                 </div>
                                 <div className="calendar-grid">
                                     {calendarDays.map((day, index) => {
-                                        const dateKey = day.date.toISOString().split('T')[0];
+                                        const dateKey = formatDateToString(day.date);
                                         const isSelected = dateKey === selectedDate;
                                         const isToday = dateKey === today;
                                         const hasRecords = hasAttendanceRecords(day.date);

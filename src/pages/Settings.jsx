@@ -4,6 +4,7 @@ import { useAPIKey } from '../context/APIKeyContext';
 import { useStudentContext } from '../context/StudentContext';
 import { useUpdate } from '../context/UpdateContext';
 import { exportAllData, importAllData } from '../db/indexedDB';
+import { fetchKoreanHolidays } from '../utils/holidayAPI';
 import Button from '../components/Button';
 import './Settings.css';
 
@@ -21,6 +22,11 @@ const Settings = () => {
     const [showHolidayModal, setShowHolidayModal] = useState(false);
     const [newHolidayDate, setNewHolidayDate] = useState('');
     const [newHolidayName, setNewHolidayName] = useState('');
+    const [showAutoFetchModal, setShowAutoFetchModal] = useState(false);
+    const [fetchYear, setFetchYear] = useState(new Date().getFullYear());
+    const [isFetchingHolidays, setIsFetchingHolidays] = useState(false);
+    const [isHolidayListExpanded, setIsHolidayListExpanded] = useState(true);
+    const [replaceExisting, setReplaceExisting] = useState(false);
 
     const handleSaveAPIKey = async () => {
         if (!inputKey.trim()) {
@@ -148,6 +154,60 @@ const Settings = () => {
         }
     };
 
+    const handleFetchKoreanHolidays = async () => {
+        if (!fetchYear) {
+            setMessage({ type: 'error', text: '연도를 선택해주세요.' });
+            return;
+        }
+
+        setIsFetchingHolidays(true);
+        setMessage({ type: '', text: '' });
+
+        try {
+            const fetchedHolidays = await fetchKoreanHolidays(fetchYear);
+
+            if (fetchedHolidays.length === 0) {
+                setMessage({ type: 'error', text: '공휴일 정보를 가져오지 못했습니다.' });
+                setIsFetchingHolidays(false);
+                return;
+            }
+
+            // "기존 공휴일 먼저 삭제" 옵션 처리
+            if (replaceExisting && holidays.length > 0) {
+                // 모든 기존 공휴일 삭제
+                const existingHolidays = [...holidays];
+                for (const holiday of existingHolidays) {
+                    const date = typeof holiday === 'string' ? holiday : holiday.date;
+                    removeHoliday(date);
+                }
+            }
+
+            // 중복 체크 및 추가
+            let addedCount = 0;
+            const existingDates = holidays.map(h => typeof h === 'string' ? h : h.date);
+
+            for (const holiday of fetchedHolidays) {
+                if (!existingDates.includes(holiday.date) || replaceExisting) {
+                    addHoliday(holiday);
+                    addedCount++;
+                }
+            }
+
+            setShowAutoFetchModal(false);
+            setMessage({
+                type: 'success',
+                text: `✅ ${fetchYear}년 공휴일 ${fetchedHolidays.length}개 중 ${addedCount}개가 추가되었습니다.`
+            });
+        } catch (error) {
+            setMessage({
+                type: 'error',
+                text: `❌ 공휴일 가져오기 실패: ${error.message || '네트워크 오류'}`
+            });
+        } finally {
+            setIsFetchingHolidays(false);
+        }
+    };
+
     return (
         <div className="settings-container">
             <div className="settings-header">
@@ -156,6 +216,13 @@ const Settings = () => {
                     ← 뒤로가기
                 </Button>
             </div>
+
+            {/* Message Banner */}
+            {message.text && (
+                <div className={`message-banner ${message.type}`}>
+                    {message.text}
+                </div>
+            )}
 
             {/* AI Connection Section */}
             <div className="settings-section">
@@ -288,9 +355,43 @@ const Settings = () => {
                     교육과정일수 계산에서 제외할 공휴일을 관리할 수 있습니다. (주말은 자동 제외)
                 </p>
 
+                {/* Auto Fetch Card */}
+                <div className="api-setup-card" style={{ marginBottom: 'var(--spacing-lg)' }}>
+                    <div className="setup-header">
+                        <h3>🇰🇷 한국 공휴일 자동 가져오기</h3>
+                        <span className="free-badge">무료</span>
+                    </div>
+                    <div className="setup-steps">
+                        <div className="setup-step">
+                            <div className="step-number">📡</div>
+                            <div className="step-content">
+                                <strong>공공데이터 포털 연동</strong>
+                                <p>한국천문연구원에서 제공하는 공식 공휴일 정보를 자동으로 가져옵니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ marginTop: '1rem' }}>
+                        <Button
+                            variant="primary"
+                            onClick={() => setShowAutoFetchModal(true)}
+                        >
+                            🚀 공휴일 자동 가져오기
+                        </Button>
+                    </div>
+                </div>
+
                 <div className="holiday-list">
                     <div className="holiday-list-header">
-                        <h3>등록된 공휴일 ({holidays ? holidays.length : 0}개)</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <button
+                                className="toggle-btn"
+                                onClick={() => setIsHolidayListExpanded(!isHolidayListExpanded)}
+                                title={isHolidayListExpanded ? '목록 접기' : '목록 펼치기'}
+                            >
+                                {isHolidayListExpanded ? '▼' : '▶'}
+                            </button>
+                            <h3>등록된 공휴일 ({holidays ? holidays.length : 0}개)</h3>
+                        </div>
                         <Button
                             variant="primary"
                             onClick={() => setShowHolidayModal(true)}
@@ -298,10 +399,12 @@ const Settings = () => {
                             ➕ 공휴일 추가
                         </Button>
                     </div>
-                    {!holidays || holidays.length === 0 ? (
-                        <p className="empty-message">등록된 공휴일이 없습니다.</p>
-                    ) : (
-                        <div className="holiday-items">
+                    {isHolidayListExpanded && (
+                        <>
+                            {!holidays || holidays.length === 0 ? (
+                                <p className="empty-message">등록된 공휴일이 없습니다.</p>
+                            ) : (
+                                <div className="holiday-items">
                             {holidays.map((holiday) => {
                                 // Handle both old format (string) and new format (object)
                                 const holidayDate = typeof holiday === 'string' ? holiday : holiday.date;
@@ -328,7 +431,9 @@ const Settings = () => {
                                     </div>
                                 );
                             })}
-                        </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
@@ -375,6 +480,81 @@ const Settings = () => {
                                 disabled={!newHolidayDate || !newHolidayName.trim()}
                             >
                                 추가
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Auto Fetch Holiday Modal */}
+            {showAutoFetchModal && (
+                <div className="modal-overlay" onClick={() => !isFetchingHolidays && setShowAutoFetchModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>🇰🇷 한국 공휴일 자동 가져오기</h3>
+                            <button
+                                className="modal-close"
+                                onClick={() => setShowAutoFetchModal(false)}
+                                disabled={isFetchingHolidays}
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label htmlFor="fetch-year">연도 선택</label>
+                                <select
+                                    id="fetch-year"
+                                    className="form-input"
+                                    value={fetchYear}
+                                    onChange={(e) => setFetchYear(parseInt(e.target.value))}
+                                    disabled={isFetchingHolidays}
+                                >
+                                    {Array.from({ length: 5 }, (_, i) => {
+                                        const year = new Date().getFullYear() + i;
+                                        return (
+                                            <option key={year} value={year}>
+                                                {year}년
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                            </div>
+                            {holidays && holidays.length > 0 && (
+                                <div className="form-group">
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={replaceExisting}
+                                            onChange={(e) => setReplaceExisting(e.target.checked)}
+                                            disabled={isFetchingHolidays}
+                                            style={{ width: 'auto', cursor: 'pointer' }}
+                                        />
+                                        <span>기존 공휴일 먼저 삭제</span>
+                                    </label>
+                                    <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0.5rem 0 0 1.75rem' }}>
+                                        체크 시 등록된 {holidays.length}개의 공휴일을 모두 삭제한 후 새로운 공휴일을 추가합니다.
+                                    </p>
+                                </div>
+                            )}
+                            <div className="help-tip">
+                                💡 한국천문연구원에서 제공하는 공식 공휴일 정보를 가져옵니다. 설날, 추석, 어린이날 등 법정 공휴일이 자동으로 추가됩니다.
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <Button
+                                variant="secondary"
+                                onClick={() => setShowAutoFetchModal(false)}
+                                disabled={isFetchingHolidays}
+                            >
+                                취소
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={handleFetchKoreanHolidays}
+                                disabled={isFetchingHolidays}
+                            >
+                                {isFetchingHolidays ? '가져오는 중...' : '🚀 가져오기'}
                             </Button>
                         </div>
                     </div>

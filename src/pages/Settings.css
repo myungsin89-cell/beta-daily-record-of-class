@@ -476,6 +476,25 @@
     background-color: #fee2e2;
 }
 
+.toggle-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6b7280;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggle-btn:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
 /* Modal Styles */
 .modal-overlay {
     position: fixed;
@@ -581,6 +600,25 @@
     font-size: 0.95rem;
     transition: all 0.2s;
     box-sizing: border-box;
+}
+
+.form-input[type="date"],
+.form-input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+select.form-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23374151' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
 }
 
 .form-input:focus {

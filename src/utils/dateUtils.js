@@ -11,11 +11,19 @@ export const groupConsecutiveDates = (dates) => {
     let currentGroup = [sortedDates[0]];
 
     for (let i = 1; i < sortedDates.length; i++) {
-        const prevDate = new Date(currentGroup[currentGroup.length - 1]);
-        const currDate = new Date(sortedDates[i]);
+        const prevDateStr = currentGroup[currentGroup.length - 1];
+        const currDateStr = sortedDates[i];
 
-        const diffTime = Math.abs(currDate - prevDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // Parse dates as local dates (not UTC) to avoid timezone issues
+        const [prevYear, prevMonth, prevDay] = prevDateStr.split('-').map(Number);
+        const [currYear, currMonth, currDay] = currDateStr.split('-').map(Number);
+
+        const prevDate = new Date(prevYear, prevMonth - 1, prevDay);
+        const currDate = new Date(currYear, currMonth - 1, currDay);
+
+        // Calculate difference in days
+        const diffTime = currDate.getTime() - prevDate.getTime();
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
         if (diffDays === 1) {
             currentGroup.push(sortedDates[i]);
@@ -35,14 +43,25 @@ export const groupConsecutiveDates = (dates) => {
 };
 
 /**
+ * Converts Date object to YYYY-MM-DD string in local timezone
+ * @param {Date} date - Date object
+ * @returns {string} - Date string in YYYY-MM-DD format
+ */
+export const formatDateToString = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+/**
  * Converts date string to Korean format (M.D)
  * @param {string} dateString - Date string (YYYY-MM-DD)
  * @returns {string} - Korean formatted date (M.D)
  */
 export const formatDateKorean = (dateString) => {
-    const date = new Date(dateString);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
+    // Parse as local date to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
     return `${month}.${day}`;
 };
 
@@ -52,7 +71,9 @@ export const formatDateKorean = (dateString) => {
  * @returns {boolean} - True if weekend
  */
 export const isWeekend = (dateString) => {
-    const date = new Date(dateString);
+    // Parse as local date to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     const dayOfWeek = date.getDay();
     return dayOfWeek === 0 || dayOfWeek === 6; // Sunday = 0, Saturday = 6
 };
@@ -75,13 +96,21 @@ export const isHoliday = (dateString, holidays = []) => {
  * @returns {number} - Number of school days
  */
 export const calculateSchoolDays = (startDate, endDate, holidays = []) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    // Parse as local dates to avoid timezone issues
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+
+    const start = new Date(startYear, startMonth - 1, startDay);
+    const end = new Date(endYear, endMonth - 1, endDay);
     let schoolDays = 0;
 
     const currentDate = new Date(start);
     while (currentDate <= end) {
-        const dateString = currentDate.toISOString().split('T')[0];
+        // Format date as YYYY-MM-DD
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
 
         // Count only if not weekend and not holiday
         if (!isWeekend(dateString) && !isHoliday(dateString, holidays)) {
