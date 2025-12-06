@@ -103,17 +103,28 @@ export const StudentProvider = ({ children }) => {
         }));
     };
 
-    const addHoliday = (dateString) => {
+    const addHoliday = (holiday) => {
         setHolidays((prev) => {
-            if (!prev.includes(dateString)) {
-                return [...prev, dateString].sort();
+            // Handle both old format (string) and new format (object)
+            const existingDates = prev.map(h => typeof h === 'string' ? h : h.date);
+            const newDate = typeof holiday === 'string' ? holiday : holiday.date;
+
+            if (!existingDates.includes(newDate)) {
+                return [...prev, holiday].sort((a, b) => {
+                    const dateA = typeof a === 'string' ? a : a.date;
+                    const dateB = typeof b === 'string' ? b : b.date;
+                    return dateA.localeCompare(dateB);
+                });
             }
             return prev;
         });
     };
 
     const removeHoliday = (dateString) => {
-        setHolidays((prev) => prev.filter(d => d !== dateString));
+        setHolidays((prev) => prev.filter(h => {
+            const holidayDate = typeof h === 'string' ? h : h.date;
+            return holidayDate !== dateString;
+        }));
     };
 
     return (

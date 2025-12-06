@@ -299,16 +299,36 @@ export const migrateFromLocalStorage = async (classId = 'default') => {
  */
 export const exportAllData = async () => {
     try {
+        // Export IndexedDB data
         const exportData = {
             version: DB_VERSION,
             exportedAt: new Date().toISOString(),
-            students: await getAllData(STORES.STUDENTS),
-            journals: await getAllData(STORES.JOURNALS),
-            attendance: await getAllData(STORES.ATTENDANCE),
-            evaluations: await getAllData(STORES.EVALUATIONS),
-            finalizedEvaluations: await getAllData(STORES.FINALIZED_EVALUATIONS),
+            indexedDB: {
+                students: await getAllData(STORES.STUDENTS),
+                journals: await getAllData(STORES.JOURNALS),
+                attendance: await getAllData(STORES.ATTENDANCE),
+                evaluations: await getAllData(STORES.EVALUATIONS),
+                finalizedEvaluations: await getAllData(STORES.FINALIZED_EVALUATIONS),
+                apiKeys: await getAllData(STORES.API_KEYS),
+                settings: await getAllData(STORES.SETTINGS),
+                fieldTrips: await getAllData(STORES.FIELD_TRIPS),
+                holidays: await getAllData(STORES.HOLIDAYS),
+            },
+            // Export ALL localStorage data
+            localStorage: {}
         };
 
+        // Copy all localStorage items
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key) {
+                exportData.localStorage[key] = localStorage.getItem(key);
+            }
+        }
+
+        console.log('✅ Export completed - IndexedDB and localStorage data included');
+        console.log(`   - IndexedDB stores: ${Object.keys(exportData.indexedDB).length}`);
+        console.log(`   - localStorage items: ${Object.keys(exportData.localStorage).length}`);
         return exportData;
     } catch (error) {
         console.error('Export failed:', error);
@@ -327,42 +347,95 @@ export const importAllData = async (importData) => {
             throw new Error('Invalid import data format');
         }
 
+        console.log('Starting data import...');
+
+        // Determine if this is the new format (with indexedDB object) or old format (direct properties)
+        const dbData = importData.indexedDB || importData;
+
+        // Import IndexedDB data
         // Import students
-        if (importData.students && Array.isArray(importData.students)) {
-            for (const item of importData.students) {
+        if (dbData.students && Array.isArray(dbData.students)) {
+            for (const item of dbData.students) {
                 await saveData(STORES.STUDENTS, item);
             }
+            console.log(`✓ Imported ${dbData.students.length} student records`);
         }
 
         // Import journals
-        if (importData.journals && Array.isArray(importData.journals)) {
-            for (const item of importData.journals) {
+        if (dbData.journals && Array.isArray(dbData.journals)) {
+            for (const item of dbData.journals) {
                 await saveData(STORES.JOURNALS, item);
             }
+            console.log(`✓ Imported ${dbData.journals.length} journal records`);
         }
 
         // Import attendance
-        if (importData.attendance && Array.isArray(importData.attendance)) {
-            for (const item of importData.attendance) {
+        if (dbData.attendance && Array.isArray(dbData.attendance)) {
+            for (const item of dbData.attendance) {
                 await saveData(STORES.ATTENDANCE, item);
             }
+            console.log(`✓ Imported ${dbData.attendance.length} attendance records`);
         }
 
         // Import evaluations
-        if (importData.evaluations && Array.isArray(importData.evaluations)) {
-            for (const item of importData.evaluations) {
+        if (dbData.evaluations && Array.isArray(dbData.evaluations)) {
+            for (const item of dbData.evaluations) {
                 await saveData(STORES.EVALUATIONS, item);
             }
+            console.log(`✓ Imported ${dbData.evaluations.length} evaluation records`);
         }
 
         // Import finalized evaluations
-        if (importData.finalizedEvaluations && Array.isArray(importData.finalizedEvaluations)) {
-            for (const item of importData.finalizedEvaluations) {
+        if (dbData.finalizedEvaluations && Array.isArray(dbData.finalizedEvaluations)) {
+            for (const item of dbData.finalizedEvaluations) {
                 await saveData(STORES.FINALIZED_EVALUATIONS, item);
             }
+            console.log(`✓ Imported ${dbData.finalizedEvaluations.length} finalized evaluation records`);
         }
 
-        console.log('✅ Import completed successfully');
+        // Import API keys
+        if (dbData.apiKeys && Array.isArray(dbData.apiKeys)) {
+            for (const item of dbData.apiKeys) {
+                await saveData(STORES.API_KEYS, item);
+            }
+            console.log(`✓ Imported ${dbData.apiKeys.length} API key records`);
+        }
+
+        // Import settings
+        if (dbData.settings && Array.isArray(dbData.settings)) {
+            for (const item of dbData.settings) {
+                await saveData(STORES.SETTINGS, item);
+            }
+            console.log(`✓ Imported ${dbData.settings.length} settings records`);
+        }
+
+        // Import field trips
+        if (dbData.fieldTrips && Array.isArray(dbData.fieldTrips)) {
+            for (const item of dbData.fieldTrips) {
+                await saveData(STORES.FIELD_TRIPS, item);
+            }
+            console.log(`✓ Imported ${dbData.fieldTrips.length} field trip records`);
+        }
+
+        // Import holidays
+        if (dbData.holidays && Array.isArray(dbData.holidays)) {
+            for (const item of dbData.holidays) {
+                await saveData(STORES.HOLIDAYS, item);
+            }
+            console.log(`✓ Imported ${dbData.holidays.length} holiday records`);
+        }
+
+        // Import localStorage data (if present in new format)
+        if (importData.localStorage && typeof importData.localStorage === 'object') {
+            let localStorageCount = 0;
+            for (const [key, value] of Object.entries(importData.localStorage)) {
+                localStorage.setItem(key, value);
+                localStorageCount++;
+            }
+            console.log(`✓ Imported ${localStorageCount} localStorage items`);
+        }
+
+        console.log('✅ Import completed successfully - all data restored');
         return { success: true };
 
     } catch (error) {

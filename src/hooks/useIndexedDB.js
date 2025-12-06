@@ -29,8 +29,10 @@ function useIndexedDB(storeName, key, initialValue) {
                     setStoredValue(result.data);
                 } else {
                     // If no data exists, save the initial value
+                    // Use the correct key name based on the store
+                    const keyName = storeName === STORES.HOLIDAYS ? 'year' : 'classId';
                     await saveData(storeName, {
-                        classId: key,
+                        [keyName]: key,
                         data: initialValue
                     });
                     setStoredValue(initialValue);
@@ -65,9 +67,10 @@ function useIndexedDB(storeName, key, initialValue) {
                 return valueToStore;
             });
 
-            // Save to IndexedDB
+            // Save to IndexedDB with correct key name
+            const keyName = storeName === STORES.HOLIDAYS ? 'year' : 'classId';
             await saveData(storeName, {
-                classId: key,
+                [keyName]: key,
                 data: valueToStore
             });
         } catch (error) {

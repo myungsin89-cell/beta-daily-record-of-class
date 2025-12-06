@@ -18,7 +18,9 @@ const Settings = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [showHolidayModal, setShowHolidayModal] = useState(false);
     const [newHolidayDate, setNewHolidayDate] = useState('');
+    const [newHolidayName, setNewHolidayName] = useState('');
 
     const handleSaveAPIKey = async () => {
         if (!inputKey.trim()) {
@@ -127,14 +129,21 @@ const Settings = () => {
             setMessage({ type: 'error', text: '날짜를 선택해주세요.' });
             return;
         }
-        addHoliday(newHolidayDate);
+        if (!newHolidayName.trim()) {
+            setMessage({ type: 'error', text: '공휴일 이름을 입력해주세요.' });
+            return;
+        }
+
+        addHoliday({ date: newHolidayDate, name: newHolidayName.trim() });
         setNewHolidayDate('');
+        setNewHolidayName('');
+        setShowHolidayModal(false);
         setMessage({ type: 'success', text: '✅ 공휴일이 추가되었습니다.' });
     };
 
-    const handleRemoveHoliday = (dateString) => {
-        if (confirm(`${dateString} 공휴일을 삭제하시겠습니까?`)) {
-            removeHoliday(dateString);
+    const handleRemoveHoliday = (holiday) => {
+        if (confirm(`${holiday.name} (${holiday.date}) 공휴일을 삭제하시겠습니까?`)) {
+            removeHoliday(holiday.date);
             setMessage({ type: 'success', text: '✅ 공휴일이 삭제되었습니다.' });
         }
     };
@@ -279,32 +288,25 @@ const Settings = () => {
                     교육과정일수 계산에서 제외할 공휴일을 관리할 수 있습니다. (주말은 자동 제외)
                 </p>
 
-                <div className="holiday-input-section">
-                    <div className="input-group">
-                        <input
-                            type="date"
-                            className="date-input"
-                            value={newHolidayDate}
-                            onChange={(e) => setNewHolidayDate(e.target.value)}
-                        />
+                <div className="holiday-list">
+                    <div className="holiday-list-header">
+                        <h3>등록된 공휴일 ({holidays ? holidays.length : 0}개)</h3>
                         <Button
                             variant="primary"
-                            onClick={handleAddHoliday}
-                            disabled={!newHolidayDate}
+                            onClick={() => setShowHolidayModal(true)}
                         >
                             ➕ 공휴일 추가
                         </Button>
                     </div>
-                </div>
-
-                <div className="holiday-list">
-                    <h3>등록된 공휴일 ({holidays ? holidays.length : 0}개)</h3>
                     {!holidays || holidays.length === 0 ? (
                         <p className="empty-message">등록된 공휴일이 없습니다.</p>
                     ) : (
                         <div className="holiday-items">
-                            {holidays.map((date) => {
-                                const dateObj = new Date(date);
+                            {holidays.map((holiday) => {
+                                // Handle both old format (string) and new format (object)
+                                const holidayDate = typeof holiday === 'string' ? holiday : holiday.date;
+                                const holidayName = typeof holiday === 'string' ? '' : holiday.name;
+                                const dateObj = new Date(holidayDate);
                                 const formatted = dateObj.toLocaleDateString('ko-KR', {
                                     year: 'numeric',
                                     month: 'long',
@@ -312,11 +314,14 @@ const Settings = () => {
                                     weekday: 'short'
                                 });
                                 return (
-                                    <div key={date} className="holiday-item">
-                                        <span className="holiday-date">{formatted}</span>
+                                    <div key={holidayDate} className="holiday-item">
+                                        <div className="holiday-info">
+                                            <span className="holiday-name">{holidayName}</span>
+                                            <span className="holiday-date">{formatted}</span>
+                                        </div>
                                         <button
                                             className="delete-holiday-btn"
-                                            onClick={() => handleRemoveHoliday(date)}
+                                            onClick={() => handleRemoveHoliday(typeof holiday === 'string' ? { date: holiday, name: '' } : holiday)}
                                         >
                                             ❌
                                         </button>
@@ -327,6 +332,54 @@ const Settings = () => {
                     )}
                 </div>
             </div>
+
+            {/* Holiday Modal */}
+            {showHolidayModal && (
+                <div className="modal-overlay" onClick={() => setShowHolidayModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>공휴일 추가</h3>
+                            <button className="modal-close" onClick={() => setShowHolidayModal(false)}>✕</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label htmlFor="holiday-date">날짜</label>
+                                <input
+                                    id="holiday-date"
+                                    type="date"
+                                    className="form-input"
+                                    value={newHolidayDate}
+                                    onChange={(e) => setNewHolidayDate(e.target.value)}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="holiday-name">공휴일 이름</label>
+                                <input
+                                    id="holiday-name"
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="예: 설날, 어린이날 등"
+                                    value={newHolidayName}
+                                    onChange={(e) => setNewHolidayName(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleAddHoliday()}
+                                />
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <Button variant="secondary" onClick={() => setShowHolidayModal(false)}>
+                                취소
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={handleAddHoliday}
+                                disabled={!newHolidayDate || !newHolidayName.trim()}
+                            >
+                                추가
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Data Backup Section */}
             <div className="settings-section">

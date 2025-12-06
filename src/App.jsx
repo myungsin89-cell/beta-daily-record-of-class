@@ -4,6 +4,29 @@ import { ClassProvider } from './context/ClassContext';
 import { StudentProvider } from './context/StudentContext';
 import { APIKeyProvider } from './context/APIKeyContext';
 import { UpdateProvider } from './context/UpdateContext';
+import { SaveStatusProvider } from './context/SaveStatusContext';
+
+// Components
+import ErrorBoundary from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
+import ClassRequiredRoute from './components/ClassRequiredRoute';
+import Layout from './components/Layout';
+
+// Pages
+import Login from './pages/Login';
+import ClassSelect from './pages/ClassSelect';
+import CreateClass from './pages/CreateClass';
+import Dashboard from './pages/Dashboard';
+import StudentManager from './pages/StudentManager';
+import AttendanceTracker from './pages/AttendanceTracker';
+import JournalEntry from './pages/JournalEntry';
+import EvaluationView from './pages/EvaluationView';
+import AssignmentManager from './pages/AssignmentManager';
+import GradeManager from './pages/GradeManager';
+import GradeInput from './pages/GradeInput';
+import BudgetManager from './pages/BudgetManager';
+import Notepad from './pages/Notepad';
+import Settings from './pages/Settings';
 
 function App() {
   return (
