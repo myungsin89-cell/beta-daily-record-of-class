@@ -1,12 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
-// import { registerSW } from 'virtual:pwa-register';
-
-// Mock registerSW for now to fix blank screen
-const registerSW = (options) => {
-    console.log('Mock registerSW called');
-    return () => { };
-};
+import { registerSW } from 'virtual:pwa-register';
 
 const UpdateContext = createContext();
 
