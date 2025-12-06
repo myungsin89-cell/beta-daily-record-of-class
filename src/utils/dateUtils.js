@@ -1,9 +1,11 @@
 /**
- * Groups consecutive dates into range objects.
+ * Groups consecutive dates into range objects, considering weekends and holidays.
+ * Dates separated only by weekends/holidays are considered consecutive.
  * @param {string[]} dates - Array of date strings (YYYY-MM-DD).
+ * @param {string[]} holidays - Array of holiday date strings (optional).
  * @returns {object[]} - Array of grouped date objects.
  */
-export const groupConsecutiveDates = (dates) => {
+export const groupConsecutiveDates = (dates, holidays = []) => {
     if (!dates || !dates.length) return [];
 
     const sortedDates = [...dates].sort();
@@ -14,18 +16,8 @@ export const groupConsecutiveDates = (dates) => {
         const prevDateStr = currentGroup[currentGroup.length - 1];
         const currDateStr = sortedDates[i];
 
-        // Parse dates as local dates (not UTC) to avoid timezone issues
-        const [prevYear, prevMonth, prevDay] = prevDateStr.split('-').map(Number);
-        const [currYear, currMonth, currDay] = currDateStr.split('-').map(Number);
-
-        const prevDate = new Date(prevYear, prevMonth - 1, prevDay);
-        const currDate = new Date(currYear, currMonth - 1, currDay);
-
-        // Calculate difference in days
-        const diffTime = currDate.getTime() - prevDate.getTime();
-        const diffDays = diffTime / (1000 * 60 * 60 * 24);
-
-        if (diffDays === 1) {
+        // Check if dates are consecutive (considering weekends and holidays)
+        if (isConsecutiveSchoolDate(prevDateStr, currDateStr, holidays)) {
             currentGroup.push(sortedDates[i]);
         } else {
             groups.push(currentGroup);
@@ -40,6 +32,52 @@ export const groupConsecutiveDates = (dates) => {
         totalDays: group.length,
         allDates: group
     }));
+};
+
+/**
+ * Checks if two dates are consecutive school dates (separated only by weekends/holidays)
+ * @param {string} date1 - First date (YYYY-MM-DD)
+ * @param {string} date2 - Second date (YYYY-MM-DD)
+ * @param {string[]} holidays - Array of holiday date strings
+ * @returns {boolean} - True if dates are consecutive school dates
+ */
+const isConsecutiveSchoolDate = (date1, date2, holidays = []) => {
+    const [year1, month1, day1] = date1.split('-').map(Number);
+    const [year2, month2, day2] = date2.split('-').map(Number);
+
+    const startDate = new Date(year1, month1 - 1, day1);
+    const endDate = new Date(year2, month2 - 1, day2);
+
+    // Calculate difference in days
+    const diffTime = endDate.getTime() - startDate.getTime();
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+    // If directly consecutive (1 day apart), return true
+    if (diffDays === 1) return true;
+
+    // If more than 1 day apart, check if only weekends/holidays are in between
+    if (diffDays > 1 && diffDays <= 7) { // Only check up to 7 days (reasonable gap)
+        const currentDate = new Date(startDate);
+        currentDate.setDate(currentDate.getDate() + 1); // Start from next day
+
+        while (currentDate < endDate) {
+            const year = currentDate.getFullYear();
+            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const day = String(currentDate.getDate()).padStart(2, '0');
+            const dateString = `${year}-${month}-${day}`;
+
+            // If there's a school day (not weekend and not holiday) in between, not consecutive
+            if (!isWeekend(dateString) && !isHoliday(dateString, holidays)) {
+                return false;
+            }
+
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        return true; // All days in between are weekends/holidays
+    }
+
+    return false; // More than 7 days apart
 };
 
 /**

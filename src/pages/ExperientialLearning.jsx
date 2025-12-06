@@ -29,9 +29,9 @@ const ExperientialLearning = () => {
                 }
             });
 
-            // 2. Group consecutive dates
+            // 2. Group consecutive dates (considering weekends and holidays)
             if (studentFieldTripDates.length > 0) {
-                const groupedTrips = groupConsecutiveDates(studentFieldTripDates);
+                const groupedTrips = groupConsecutiveDates(studentFieldTripDates, holidays);
 
                 // 3. Merge with metadata
                 groupedTrips.forEach(group => {
