@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAPIKey } from '../context/APIKeyContext';
+import { useStudentContext } from '../context/StudentContext';
+import { useUpdate } from '../context/UpdateContext';
 import { exportAllData, importAllData } from '../db/indexedDB';
 import Button from '../components/Button';
 import './Settings.css';
 
 const Settings = () => {
     const { apiKey, isConnected, saveAPIKey, deleteAPIKey, testConnection } = useAPIKey();
+    const { holidays, addHoliday, removeHoliday } = useStudentContext();
+    const { needRefresh, updateServiceWorker } = useUpdate();
     const navigate = useNavigate();
 
     const [inputKey, setInputKey] = useState('');
@@ -14,6 +18,7 @@ const Settings = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [message, setMessage] = useState({ type: '', text: '' });
+    const [newHolidayDate, setNewHolidayDate] = useState('');
 
     const handleSaveAPIKey = async () => {
         if (!inputKey.trim()) {
@@ -115,6 +120,23 @@ const Settings = () => {
         }
 
         event.target.value = '';
+    };
+
+    const handleAddHoliday = () => {
+        if (!newHolidayDate) {
+            setMessage({ type: 'error', text: '날짜를 선택해주세요.' });
+            return;
+        }
+        addHoliday(newHolidayDate);
+        setNewHolidayDate('');
+        setMessage({ type: 'success', text: '✅ 공휴일이 추가되었습니다.' });
+    };
+
+    const handleRemoveHoliday = (dateString) => {
+        if (confirm(`${dateString} 공휴일을 삭제하시겠습니까?`)) {
+            removeHoliday(dateString);
+            setMessage({ type: 'success', text: '✅ 공휴일이 삭제되었습니다.' });
+        }
     };
 
     return (
@@ -250,6 +272,62 @@ const Settings = () => {
                 </div>
             </div>
 
+            {/* Holiday Management Section */}
+            <div className="settings-section">
+                <h2>📅 공휴일 관리</h2>
+                <p className="section-description">
+                    교육과정일수 계산에서 제외할 공휴일을 관리할 수 있습니다. (주말은 자동 제외)
+                </p>
+
+                <div className="holiday-input-section">
+                    <div className="input-group">
+                        <input
+                            type="date"
+                            className="date-input"
+                            value={newHolidayDate}
+                            onChange={(e) => setNewHolidayDate(e.target.value)}
+                        />
+                        <Button
+                            variant="primary"
+                            onClick={handleAddHoliday}
+                            disabled={!newHolidayDate}
+                        >
+                            ➕ 공휴일 추가
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="holiday-list">
+                    <h3>등록된 공휴일 ({holidays ? holidays.length : 0}개)</h3>
+                    {!holidays || holidays.length === 0 ? (
+                        <p className="empty-message">등록된 공휴일이 없습니다.</p>
+                    ) : (
+                        <div className="holiday-items">
+                            {holidays.map((date) => {
+                                const dateObj = new Date(date);
+                                const formatted = dateObj.toLocaleDateString('ko-KR', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    weekday: 'short'
+                                });
+                                return (
+                                    <div key={date} className="holiday-item">
+                                        <span className="holiday-date">{formatted}</span>
+                                        <button
+                                            className="delete-holiday-btn"
+                                            onClick={() => handleRemoveHoliday(date)}
+                                        >
+                                            ❌
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* Data Backup Section */}
             <div className="settings-section">
                 <h2>💾 데이터 백업 및 복구</h2>
@@ -294,13 +372,29 @@ const Settings = () => {
                 </a>
             </div>
 
-            {/* App Info Section */}
+            {/* App Info Section with Update Control */}
             <div className="settings-section app-info-section">
                 <h2>ℹ️ 앱 정보</h2>
                 <div className="info-grid">
                     <div className="info-item">
                         <span className="info-label">버전</span>
-                        <span className="info-value">베타테스트</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+                            <span className="info-value">베타테스트</span>
+                            {needRefresh ? (
+                                <Button
+                                    size="small"
+                                    variant="accent"
+                                    onClick={() => updateServiceWorker()}
+                                    style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem' }}
+                                >
+                                    🔄 업데이트 가능
+                                </Button>
+                            ) : (
+                                <span style={{ fontSize: '0.75rem', color: '#059669', backgroundColor: '#d1fae5', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
+                                    최신 버전
+                                </span>
+                            )}
+                        </div>
                     </div>
                     <div className="info-item">
                         <span className="info-label">저장 방식</span>
@@ -310,6 +404,25 @@ const Settings = () => {
                         <span className="info-label">AI 모델</span>
                         <span className="info-value">Google Gemini 2.0</span>
                     </div>
+                </div>
+
+                {/* Update Action Area */}
+                <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                    <h3 style={{ fontSize: '1rem', margin: '0 0 0.5rem 0', color: '#374151' }}>업데이트 상태</h3>
+                    {needRefresh ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <p style={{ margin: 0, fontSize: '0.9rem', color: '#4b5563' }}>
+                                새로운 버전이 출시되었습니다.
+                            </p>
+                            <Button variant="primary" onClick={() => updateServiceWorker()}>
+                                최신 버전으로 업데이트
+                            </Button>
+                        </div>
+                    ) : (
+                        <p style={{ margin: 0, fontSize: '0.9rem', color: '#6b7280' }}>
+                            현재 최신 버전을 사용 중입니다.
+                        </p>
+                    )}
                 </div>
             </div>
         </div>

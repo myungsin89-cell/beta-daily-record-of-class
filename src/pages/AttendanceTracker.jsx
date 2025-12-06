@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { useStudentContext } from '../context/StudentContext';
+import ExperientialLearning from './ExperientialLearning';
 import './AttendanceTracker.css';
 
 const AttendanceTracker = () => {
@@ -10,6 +11,7 @@ const AttendanceTracker = () => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [reasons, setReasons] = useState({});
     const [showMonthlySummary, setShowMonthlySummary] = useState(false);
+    const [activeTab, setActiveTab] = useState('attendance'); // 'attendance' or 'fieldtrips'
 
     // Sort students by attendance number
     const sortedStudents = [...students].sort((a, b) => a.attendanceNumber - b.attendanceNumber);
@@ -246,172 +248,194 @@ const AttendanceTracker = () => {
     return (
         <>
             <div className="flex justify-between items-center mb-lg">
-                <h1>출석 체크</h1>
+                <h1>출석 관리</h1>
             </div>
 
-            {/* Month Navigation */}
-            <div className="month-navigation">
-                <button className="month-nav-btn" onClick={goToPreviousMonth}>◀</button>
-                <h2 className="current-month">
-                    {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
-                </h2>
-                <button className="month-nav-btn" onClick={goToNextMonth}>▶</button>
+            {/* Tab Navigation */}
+            <div className="tab-navigation">
+                <button
+                    className={`tab-button ${activeTab === 'attendance' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('attendance')}
+                >
+                    📋 출석 체크
+                </button>
+                <button
+                    className={`tab-button ${activeTab === 'fieldtrips' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('fieldtrips')}
+                >
+                    🚌 체험학습 관리
+                </button>
             </div>
 
-            {/* Main Content */}
-            <div className="calendar-attendance-section-full">
-                {/* Attendance Checklist - LEFT SIDE */}
-                <div className="attendance-checklist-section">
-                    <h3 className="checklist-title">📅 {formatSelectedDate()}</h3>
-
-                    {sortedStudents.length === 0 ? (
-                        <Card className="text-center">
-                            <p>등록된 학생이 없습니다.</p>
-                        </Card>
-                    ) : (
-                        <div className="attendance-checklist">
-                            {sortedStudents.map((student) => {
-                                const currentStatus = getStatus(student.id);
-                                const reason = getReason(student.id);
-                                const tempKey = `${selectedDate}_${student.id}`;
-
-                                return (
-                                    <Card key={student.id} className="attendance-card-compact">
-                                        <div className="student-info-compact">
-                                            <span className="student-number">{student.attendanceNumber}.</span>
-                                            <span className="student-name">{student.name}</span>
-                                        </div>
-
-                                        <div className="status-buttons-full">
-                                            {statusOptions.map(option => (
-                                                <button
-                                                    key={option.value}
-                                                    className={`status-btn-full ${currentStatus === option.value ? 'active' : ''}`}
-                                                    onClick={() => handleStatusChange(student.id, option.value)}
-                                                    style={{
-                                                        backgroundColor: currentStatus === option.value ? option.color : 'transparent',
-                                                        borderColor: option.color,
-                                                        color: currentStatus === option.value ? 'white' : option.color
-                                                    }}
-                                                >
-                                                    {option.label}
-                                                </button>
-                                            ))}
-                                        </div>
-
-                                        {(currentStatus === 'sick' || currentStatus === 'other') && (
-                                            <div className="reason-input-container">
-                                                <input
-                                                    type="text"
-                                                    className="reason-input-full"
-                                                    placeholder={currentStatus === 'sick' ? '병결 사유 입력' : '기타 사유 입력'}
-                                                    value={reasons[tempKey] || reason || ''}
-                                                    onChange={(e) => handleReasonChange(student.id, e.target.value)}
-                                                />
-                                            </div>
-                                        )}
-                                    </Card>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-
-                {/* Calendar - RIGHT SIDE */}
-                <div className="calendar-container">
-                    <div className="calendar">
-                        <div className="calendar-header">
-                            {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
-                                <div key={index} className="calendar-day-name">{day}</div>
-                            ))}
-                        </div>
-                        <div className="calendar-grid">
-                            {calendarDays.map((day, index) => {
-                                const dateKey = day.date.toISOString().split('T')[0];
-                                const isSelected = dateKey === selectedDate;
-                                const isToday = dateKey === today;
-                                const hasRecords = hasAttendanceRecords(day.date);
-                                const specialStudents = getSpecialStatusStudents(day.date);
-
-                                return (
-                                    <div
-                                        key={index}
-                                        className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
-                                        onClick={() => day.isCurrentMonth && handleDateClick(day.date)}
-                                    >
-                                        <span className="day-number">{day.date.getDate()}</span>
-                                        {hasRecords && <span className="record-indicator">●</span>}
-                                        {specialStudents.length > 0 && (
-                                            <div className="special-status-names">
-                                                {specialStudents.map((s, idx) => (
-                                                    <span
-                                                        key={idx}
-                                                        className="status-name"
-                                                        style={{ color: getStatusColor(s.status) }}
-                                                    >
-                                                        {s.name}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
+            {activeTab === 'attendance' ? (
+                <>
+                    {/* Month Navigation */}
+                    <div className="month-navigation">
+                        <button className="month-nav-btn" onClick={goToPreviousMonth}>◀</button>
+                        <h2 className="current-month">
+                            {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
+                        </h2>
+                        <button className="month-nav-btn" onClick={goToNextMonth}>▶</button>
                     </div>
 
-                    {/* Monthly Summary Button */}
-                    <div className="monthly-summary-btn-container">
-                        <Button
-                            variant="primary"
-                            onClick={() => setShowMonthlySummary(true)}
-                            style={{ width: '100%' }}
-                        >
-                            📊 {currentDate.getMonth() + 1}월 출결 특이사항 종합
-                        </Button>
-                    </div>
-                </div>
-            </div>
+                    {/* Main Content */}
+                    <div className="calendar-attendance-section-full">
+                        {/* Attendance Checklist - LEFT SIDE */}
+                        <div className="attendance-checklist-section">
+                            <h3 className="checklist-title">📅 {formatSelectedDate()}</h3>
 
-            {/* Monthly Summary Modal */}
-            {showMonthlySummary && (
-                <div className="modal-overlay" onClick={() => setShowMonthlySummary(false)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월 출결 특이사항</h2>
-                            <button className="modal-close" onClick={() => setShowMonthlySummary(false)}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            {getMonthlySummary().length === 0 ? (
-                                <p className="text-muted text-center">이번 달 특이사항이 없습니다.</p>
+                            {sortedStudents.length === 0 ? (
+                                <Card className="text-center">
+                                    <p>등록된 학생이 없습니다.</p>
+                                </Card>
                             ) : (
-                                getMonthlySummary().map((daySummary, idx) => (
-                                    <div key={idx} className="summary-date-group">
-                                        <h3 className="summary-date-header">{daySummary.dateString}</h3>
-                                        <div className="summary-records">
-                                            {daySummary.records.map((record, ridx) => (
-                                                <div key={ridx} className="summary-record-item">
-                                                    <span className="summary-student">
-                                                        {record.attendanceNumber}. {record.studentName}
-                                                    </span>
-                                                    <span
-                                                        className="summary-status"
-                                                        style={{ color: getStatusColor(record.status) }}
-                                                    >
-                                                        {getStatusLabel(record.status)}
-                                                    </span>
-                                                    {record.reason && (
-                                                        <span className="summary-reason">({record.reason})</span>
-                                                    )}
+                                <div className="attendance-checklist">
+                                    {sortedStudents.map((student) => {
+                                        const currentStatus = getStatus(student.id);
+                                        const reason = getReason(student.id);
+                                        const tempKey = `${selectedDate}_${student.id}`;
+
+                                        return (
+                                            <Card key={student.id} className="attendance-card-compact">
+                                                <div className="student-info-compact">
+                                                    <span className="student-number">{student.attendanceNumber}.</span>
+                                                    <span className="student-name">{student.name}</span>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))
+
+                                                <div className="status-buttons-full">
+                                                    {statusOptions.map(option => (
+                                                        <button
+                                                            key={option.value}
+                                                            className={`status-btn-full ${currentStatus === option.value ? 'active' : ''}`}
+                                                            onClick={() => handleStatusChange(student.id, option.value)}
+                                                            style={{
+                                                                backgroundColor: currentStatus === option.value ? option.color : 'transparent',
+                                                                borderColor: option.color,
+                                                                color: currentStatus === option.value ? 'white' : option.color
+                                                            }}
+                                                        >
+                                                            {option.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+
+                                                {(currentStatus === 'sick' || currentStatus === 'other') && (
+                                                    <div className="reason-input-container">
+                                                        <input
+                                                            type="text"
+                                                            className="reason-input-full"
+                                                            placeholder={currentStatus === 'sick' ? '병결 사유 입력' : '기타 사유 입력'}
+                                                            value={reasons[tempKey] || reason || ''}
+                                                            onChange={(e) => handleReasonChange(student.id, e.target.value)}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </Card>
+                                        );
+                                    })}
+                                </div>
                             )}
                         </div>
+
+                        {/* Calendar - RIGHT SIDE */}
+                        <div className="calendar-container">
+                            <div className="calendar">
+                                <div className="calendar-header">
+                                    {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
+                                        <div key={index} className="calendar-day-name">{day}</div>
+                                    ))}
+                                </div>
+                                <div className="calendar-grid">
+                                    {calendarDays.map((day, index) => {
+                                        const dateKey = day.date.toISOString().split('T')[0];
+                                        const isSelected = dateKey === selectedDate;
+                                        const isToday = dateKey === today;
+                                        const hasRecords = hasAttendanceRecords(day.date);
+                                        const specialStudents = getSpecialStatusStudents(day.date);
+
+                                        return (
+                                            <div
+                                                key={index}
+                                                className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
+                                                onClick={() => day.isCurrentMonth && handleDateClick(day.date)}
+                                            >
+                                                <span className="day-number">{day.date.getDate()}</span>
+                                                {hasRecords && <span className="record-indicator">●</span>}
+                                                {specialStudents.length > 0 && (
+                                                    <div className="special-status-names">
+                                                        {specialStudents.map((s, idx) => (
+                                                            <span
+                                                                key={idx}
+                                                                className="status-name"
+                                                                style={{ color: getStatusColor(s.status) }}
+                                                            >
+                                                                {s.name}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Monthly Summary Button */}
+                            <div className="monthly-summary-btn-container">
+                                <Button
+                                    variant="primary"
+                                    onClick={() => setShowMonthlySummary(true)}
+                                    style={{ width: '100%' }}
+                                >
+                                    📊 {currentDate.getMonth() + 1}월 출결 특이사항 종합
+                                </Button>
+                            </div>
+                        </div>
                     </div>
-                </div>
+
+                    {/* Monthly Summary Modal */}
+                    {showMonthlySummary && (
+                        <div className="modal-overlay" onClick={() => setShowMonthlySummary(false)}>
+                            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h2>{currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월 출결 특이사항</h2>
+                                    <button className="modal-close" onClick={() => setShowMonthlySummary(false)}>×</button>
+                                </div>
+                                <div className="modal-body">
+                                    {getMonthlySummary().length === 0 ? (
+                                        <p className="text-muted text-center">이번 달 특이사항이 없습니다.</p>
+                                    ) : (
+                                        getMonthlySummary().map((daySummary, idx) => (
+                                            <div key={idx} className="summary-date-group">
+                                                <h3 className="summary-date-header">{daySummary.dateString}</h3>
+                                                <div className="summary-records">
+                                                    {daySummary.records.map((record, ridx) => (
+                                                        <div key={ridx} className="summary-record-item">
+                                                            <span className="summary-student">
+                                                                {record.attendanceNumber}. {record.studentName}
+                                                            </span>
+                                                            <span
+                                                                className="summary-status"
+                                                                style={{ color: getStatusColor(record.status) }}
+                                                            >
+                                                                {getStatusLabel(record.status)}
+                                                            </span>
+                                                            {record.reason && (
+                                                                <span className="summary-reason">({record.reason})</span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </>
+            ) : (
+                <ExperientialLearning />
             )}
         </>
     );

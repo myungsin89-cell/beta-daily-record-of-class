@@ -218,8 +218,18 @@ const AssignmentManager = () => {
                                                     <span className="student-number">{student.attendanceNumber}번</span>
                                                     <span className="student-name">{student.name}</span>
                                                 </div>
-                                                <span className="status-icon">
-                                                    {isCompleted ? '✅ 제출완료' : '❌ 미제출'}
+                                                <span className="assignment-status-wrapper">
+                                                    {isCompleted ? (
+                                                        <span className="status-label completed">
+                                                            <span className="status-emoji">✅</span>
+                                                            <span className="status-text">제출완료</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="status-label incomplete">
+                                                            <span className="status-emoji">❌</span>
+                                                            <span className="status-text">미제출</span>
+                                                        </span>
+                                                    )}
                                                 </span>
                                             </div>
 

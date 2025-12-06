@@ -1,0 +1,139 @@
+.experiential-learning-container {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.header-section h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+
+.export-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #10b981;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.export-btn:hover {
+    background-color: #059669;
+}
+
+.info-note {
+    background-color: #f0f9ff;
+    border-left: 4px solid #3b82f6;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+.info-note p {
+    margin: 4px 0;
+    font-size: 14px;
+    color: #1e40af;
+}
+
+.info-note small {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+.data-table th,
+.data-table td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.data-table th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    color: #4b5563;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.data-table td {
+    color: #1f2937;
+    font-size: 14px;
+}
+
+.data-table tr:hover {
+    background-color: #f9fafb;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 40px;
+    color: #6b7280;
+    font-size: 15px;
+    line-height: 1.8;
+    background: linear-gradient(to bottom, #f9fafb, #ffffff);
+}
+
+.empty-state small {
+    display: block;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #9ca3af;
+    font-weight: normal;
+}
+
+/* Input Styles */
+.cell-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.cell-input:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+}
+
+.text-center {
+    text-align: center !important;
+}
+
+/* Checkbox */
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #8b5cf6;
+    cursor: pointer;
+}

@@ -62,7 +62,19 @@ const JournalEntry = () => {
     const [customInstructions, setCustomInstructions] = useState('');
     const [referenceFile, setReferenceFile] = useState(null);
     const [referenceFileContent, setReferenceFileContent] = useState('');
-    const [additionalNotes, setAdditionalNotes] = useState('');
+    const [additionalNotesMap, setAdditionalNotesMap] = useState({});
+
+    // Derive current additional notes from map
+    const additionalNotes = selectedStudentId ? (additionalNotesMap[selectedStudentId] || '') : '';
+
+    const handleAdditionalNotesChange = (e) => {
+        if (!selectedStudentId) return;
+        const value = e.target.value;
+        setAdditionalNotesMap(prev => ({
+            ...prev,
+            [selectedStudentId]: value
+        }));
+    };
     const [showAttendanceDetails, setShowAttendanceDetails] = useState(false);
     const [revisionRequest, setRevisionRequest] = useState('');
     const [isEvaluationExpanded, setIsEvaluationExpanded] = useState(true);
@@ -739,7 +751,7 @@ const JournalEntry = () => {
                                                 className="journal-textarea"
                                                 placeholder="AI 평가 생성 전에 추가로 고려할 특이사항을 입력하세요... (예: 학급 활동 참여도, 리더십 발휘 사례 등)"
                                                 value={additionalNotes}
-                                                onChange={(e) => setAdditionalNotes(e.target.value)}
+                                                onChange={handleAdditionalNotesChange}
                                                 style={{ minHeight: '100px', fontSize: '0.9rem', backgroundColor: 'white' }}
                                             />
                                         </div>

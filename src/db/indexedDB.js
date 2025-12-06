@@ -6,7 +6,7 @@
  */
 
 const DB_NAME = 'ClassDiaryDB';
-const DB_VERSION = 2; // Increment version to force recreation
+const DB_VERSION = 4; // Increment version to add holidays store
 
 // Object Store names
 const STORES = {
@@ -16,7 +16,9 @@ const STORES = {
     EVALUATIONS: 'evaluations',
     FINALIZED_EVALUATIONS: 'finalized_evaluations',
     API_KEYS: 'api_keys',
-    SETTINGS: 'settings'
+    SETTINGS: 'settings',
+    FIELD_TRIPS: 'field_trips',
+    HOLIDAYS: 'holidays'
 };
 
 /**
@@ -50,22 +52,36 @@ export const initDB = () => {
             const db = event.target.result;
             console.log('Upgrading IndexedDB from version', event.oldVersion, 'to', event.newVersion);
 
-            // Delete all existing object stores to recreate them
-            const existingStores = Array.from(db.objectStoreNames);
-            existingStores.forEach(storeName => {
-                console.log('Deleting old store:', storeName);
-                db.deleteObjectStore(storeName);
-            });
+            // Create object stores if they don't exist
+            console.log('Creating/Updating object stores...');
 
-            // Create all object stores fresh
-            console.log('Creating fresh object stores...');
-            db.createObjectStore(STORES.STUDENTS, { keyPath: 'classId' });
-            db.createObjectStore(STORES.JOURNALS, { keyPath: 'classId' });
-            db.createObjectStore(STORES.ATTENDANCE, { keyPath: 'classId' });
-            db.createObjectStore(STORES.EVALUATIONS, { keyPath: 'classId' });
-            db.createObjectStore(STORES.FINALIZED_EVALUATIONS, { keyPath: 'classId' });
-            db.createObjectStore(STORES.API_KEYS, { keyPath: 'id' });
-            db.createObjectStore(STORES.SETTINGS, { keyPath: 'key' });
+            if (!db.objectStoreNames.contains(STORES.STUDENTS)) {
+                db.createObjectStore(STORES.STUDENTS, { keyPath: 'classId' });
+            }
+            if (!db.objectStoreNames.contains(STORES.JOURNALS)) {
+                db.createObjectStore(STORES.JOURNALS, { keyPath: 'classId' });
+            }
+            if (!db.objectStoreNames.contains(STORES.ATTENDANCE)) {
+                db.createObjectStore(STORES.ATTENDANCE, { keyPath: 'classId' });
+            }
+            if (!db.objectStoreNames.contains(STORES.EVALUATIONS)) {
+                db.createObjectStore(STORES.EVALUATIONS, { keyPath: 'classId' });
+            }
+            if (!db.objectStoreNames.contains(STORES.FINALIZED_EVALUATIONS)) {
+                db.createObjectStore(STORES.FINALIZED_EVALUATIONS, { keyPath: 'classId' });
+            }
+            if (!db.objectStoreNames.contains(STORES.API_KEYS)) {
+                db.createObjectStore(STORES.API_KEYS, { keyPath: 'id' });
+            }
+            if (!db.objectStoreNames.contains(STORES.SETTINGS)) {
+                db.createObjectStore(STORES.SETTINGS, { keyPath: 'key' });
+            }
+            if (!db.objectStoreNames.contains(STORES.FIELD_TRIPS)) {
+                db.createObjectStore(STORES.FIELD_TRIPS, { keyPath: 'classId' });
+            }
+            if (!db.objectStoreNames.contains(STORES.HOLIDAYS)) {
+                db.createObjectStore(STORES.HOLIDAYS, { keyPath: 'year' });
+            }
 
             console.log('IndexedDB upgrade complete');
         };

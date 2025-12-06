@@ -3,26 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ClassProvider } from './context/ClassContext';
 import { StudentProvider } from './context/StudentContext';
 import { APIKeyProvider } from './context/APIKeyContext';
-import { SaveStatusProvider } from './context/SaveStatusContext';
-import ErrorBoundary from './components/ErrorBoundary';
-import Layout from './components/Layout';
-import ProtectedRoute from './components/ProtectedRoute';
-import ClassRequiredRoute from './components/ClassRequiredRoute';
-import Login from './pages/Login';
-import ClassSelect from './pages/ClassSelect';
-import CreateClass from './pages/CreateClass';
-import Dashboard from './pages/Dashboard';
-import StudentManager from './pages/StudentManager';
-import AttendanceTracker from './pages/AttendanceTracker';
-import JournalEntry from './pages/JournalEntry';
-import EvaluationView from './pages/EvaluationView';
-import AssignmentManager from './pages/AssignmentManager';
-import GradeManager from './pages/GradeManager';
-import GradeInput from './pages/GradeInput';
-import BudgetManager from './pages/BudgetManager';
-import Notepad from './pages/Notepad';
-import Settings from './pages/Settings';
-import UpdatePrompt from './components/UpdatePrompt';
+import { UpdateProvider } from './context/UpdateContext';
 
 function App() {
   return (
@@ -33,39 +14,40 @@ function App() {
             <ClassProvider>
               <StudentProvider>
                 <SaveStatusProvider>
-                  <Routes>
-                    <Route path="/login" element={<Login />} />
+                  <UpdateProvider>
+                    <Routes>
+                      <Route path="/login" element={<Login />} />
 
-                    <Route element={<ProtectedRoute />}>
-                      <Route path="/select-class" element={<ClassSelect />} />
-                      <Route path="/create-class" element={<CreateClass />} />
+                      <Route element={<ProtectedRoute />}>
+                        <Route path="/select-class" element={<ClassSelect />} />
+                        <Route path="/create-class" element={<CreateClass />} />
 
-                      <Route element={<ClassRequiredRoute />}>
-                        <Route element={<Layout />}>
-                          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                          <Route path="/dashboard" element={<Dashboard />} />
-                          <Route path="/students" element={<StudentManager />} />
-                          <Route path="/attendance" element={<AttendanceTracker />} />
-                          <Route path="/journal" element={<JournalEntry />} />
-                          <Route path="/journal-entry" element={<JournalEntry />} />
-                          <Route path="/evaluation" element={<EvaluationView />} />
-                          <Route path="/assignments" element={<AssignmentManager />} />
-                          <Route path="/grades" element={<GradeManager />} />
-                          <Route path="/grade-input" element={<GradeInput />} />
-                          <Route path="/budget" element={<BudgetManager />} />
-                          <Route path="/notepad" element={<Notepad />} />
-                          <Route path="/settings" element={<Settings />} />
+                        <Route element={<ClassRequiredRoute />}>
+                          <Route element={<Layout />}>
+                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/students" element={<StudentManager />} />
+                            <Route path="/attendance" element={<AttendanceTracker />} />
+                            <Route path="/journal" element={<JournalEntry />} />
+                            <Route path="/journal-entry" element={<JournalEntry />} />
+                            <Route path="/evaluation" element={<EvaluationView />} />
+                            <Route path="/assignments" element={<AssignmentManager />} />
+                            <Route path="/grades" element={<GradeManager />} />
+                            <Route path="/grade-input" element={<GradeInput />} />
+                            <Route path="/budget" element={<BudgetManager />} />
+                            <Route path="/notepad" element={<Notepad />} />
+                            <Route path="/settings" element={<Settings />} />
+                          </Route>
                         </Route>
                       </Route>
-                    </Route>
-                  </Routes>
+                    </Routes>
+                  </UpdateProvider>
                 </SaveStatusProvider>
               </StudentProvider>
             </ClassProvider>
           </APIKeyProvider>
         </AuthProvider>
       </BrowserRouter>
-      <UpdatePrompt />
     </ErrorBoundary>
   );
 }

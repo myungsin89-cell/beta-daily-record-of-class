@@ -8,7 +8,9 @@ const StudentContext = createContext();
 
 // Define initial values outside component to avoid recreating on each render
 const INITIAL_ARRAY = [];
-const INITIAL_OBJECT = {};
+const INITIAL_OBJECT = {}
+
+    ;
 
 export const useStudentContext = () => useContext(StudentContext); // eslint-disable-line react-refresh/only-export-components
 
@@ -23,8 +25,10 @@ export const StudentProvider = ({ children }) => {
     const [journals, setJournals, isLoadingJournals] = useIndexedDB(STORES.JOURNALS, dataKey, INITIAL_OBJECT);
     const [evaluations, setEvaluations, isLoadingEvaluations] = useIndexedDB(STORES.EVALUATIONS, dataKey, INITIAL_OBJECT);
     const [finalizedEvaluations, setFinalizedEvaluations, isLoadingFinalized] = useIndexedDB(STORES.FINALIZED_EVALUATIONS, dataKey, INITIAL_OBJECT);
+    const [fieldTrips, setFieldTrips, isLoadingFieldTrips] = useIndexedDB(STORES.FIELD_TRIPS, dataKey, INITIAL_OBJECT);
+    const [holidays, setHolidays, isLoadingHolidays] = useIndexedDB(STORES.HOLIDAYS, new Date().getFullYear().toString(), INITIAL_ARRAY);
 
-    const isLoading = isLoadingStudents || isLoadingAttendance || isLoadingJournals || isLoadingEvaluations || isLoadingFinalized;
+    const isLoading = isLoadingStudents || isLoadingAttendance || isLoadingJournals || isLoadingEvaluations || isLoadingFinalized || isLoadingFieldTrips || isLoadingHolidays;
 
     const addStudent = (student) => {
         setStudents([...students, student]);
@@ -89,6 +93,29 @@ export const StudentProvider = ({ children }) => {
         }));
     };
 
+    const saveFieldTripMetadata = (studentId, metadata) => {
+        setFieldTrips((prev) => ({
+            ...prev,
+            [studentId]: {
+                ...(prev[studentId] || {}),
+                ...metadata
+            }
+        }));
+    };
+
+    const addHoliday = (dateString) => {
+        setHolidays((prev) => {
+            if (!prev.includes(dateString)) {
+                return [...prev, dateString].sort();
+            }
+            return prev;
+        });
+    };
+
+    const removeHoliday = (dateString) => {
+        setHolidays((prev) => prev.filter(d => d !== dateString));
+    };
+
     return (
         <StudentContext.Provider
             value={{
@@ -104,6 +131,11 @@ export const StudentProvider = ({ children }) => {
                 saveEvaluation,
                 finalizedEvaluations,
                 saveFinalizedEvaluation,
+                fieldTrips,
+                saveFieldTripMetadata,
+                holidays,
+                addHoliday,
+                removeHoliday,
                 isLoading,
             }}
         >
@@ -111,4 +143,3 @@ export const StudentProvider = ({ children }) => {
         </StudentContext.Provider>
     );
 };
-

@@ -9,9 +9,9 @@ const Sidebar = ({ isOpen, onClose }) => {
         { id: 'notepad', to: '/notepad', label: '메모장' },
         { id: 'attendance', to: '/attendance', label: '출석 체크' },
         { id: 'journal', to: '/journal-entry', label: '학생 기록' },
-        { id: 'grades', to: '/grades', label: '학생 성적' },
+        { id: 'grades', to: '/grades', label: '성적 관리' },
+        { id: 'budget', to: '/budget', label: '예산 관리' },
         { id: 'assignments', to: '/assignments', label: '과제 관리' },
-        { id: 'budget', to: '/budget', label: '예산관리' },
     ];
 
     const [menuItems, setMenuItems] = useState(() => {
@@ -76,8 +76,6 @@ const Sidebar = ({ isOpen, onClose }) => {
                 </div>
                 <button className="close-sidebar-btn" onClick={onClose}>×</button>
             </div>
-
-
 
             <nav className="nav-links">
                 {/* Fixed Top Section - Student Management */}

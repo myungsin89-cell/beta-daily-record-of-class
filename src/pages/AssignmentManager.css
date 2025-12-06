@@ -169,14 +169,36 @@
     opacity: 0.8;
 }
 
+
 .student-name {
     font-weight: bold;
     font-size: 1.1rem;
 }
 
-.status-icon {
-    font-size: 0.9rem;
+.assignment-status-wrapper {
     margin-top: 4px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.status-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    /* Increased from 12px */
+    font-family: inherit;
+    color: var(--color-text-secondary);
+}
+
+.status-emoji {
+    font-size: 1.1em;
+}
+
+.status-text {
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 .note-input-container input {
