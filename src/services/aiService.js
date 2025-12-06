@@ -90,7 +90,7 @@ ${revisionRequest && revisionRequest.trim() !== '' ? `## [🔥 수정 요청 사
 `;
 
         // Call Gemini API
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
         const result = await model.generateContent(fullPrompt);
         const response = await result.response;
