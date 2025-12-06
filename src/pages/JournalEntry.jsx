@@ -457,13 +457,13 @@ const JournalEntry = () => {
                     }}
                 >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-                        <span style={{ fontSize: '1.75rem' }}>⚙️</span>
+                        <span style={{ fontSize: '1.75rem' }}>💬</span>
                         <div>
                             <h3 style={{ margin: 0, color: '#92400e', fontSize: '1.1rem', fontWeight: '600' }}>
-                                AI 평가 공통 설정
+                                나만의 평가 스타일 설정
                             </h3>
                             <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', color: '#b45309' }}>
-                                모든 학생의 AI 평가에 적용되는 어투와 지시사항을 설정하세요
+                                기본 평가 형식은 이미 준비되어 있어요. 여기서 선생님만의 스타일을 추가하세요!
                             </p>
                         </div>
                     </div>
@@ -484,6 +484,52 @@ const JournalEntry = () => {
                         backgroundColor: 'white',
                         borderTop: '1px solid #fcd34d'
                     }}>
+                        {/* 시스템 기본 설정 안내 박스 */}
+                        <div style={{
+                            backgroundColor: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            borderRadius: '8px',
+                            padding: '1rem 1.25rem',
+                            marginBottom: '1.5rem'
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                marginBottom: '0.75rem'
+                            }}>
+                                <span style={{ fontSize: '1.1rem' }}>ℹ️</span>
+                                <h4 style={{
+                                    margin: 0,
+                                    fontSize: '0.95rem',
+                                    fontWeight: '600',
+                                    color: '#1e40af'
+                                }}>
+                                    시스템 기본 설정
+                                </h4>
+                            </div>
+                            <ul style={{
+                                margin: 0,
+                                paddingLeft: '1.25rem',
+                                fontSize: '0.85rem',
+                                color: '#1e40af',
+                                lineHeight: '1.6'
+                            }}>
+                                <li>개조식 종결 (~함, ~임 등)</li>
+                                <li>분량 300자 내외</li>
+                                <li>긍정적·발전적 표현</li>
+                                <li>장점 부각 및 개선점은 성장 가능성으로 표현</li>
+                            </ul>
+                            <p style={{
+                                margin: '0.75rem 0 0 0',
+                                fontSize: '0.85rem',
+                                color: '#3b82f6',
+                                fontWeight: '500'
+                            }}>
+                                → 아래에서 선생님만의 특별한 요청사항이나 말투를 추가할 수 있어요!
+                            </p>
+                        </div>
+
                         <div style={{ marginBottom: '1.5rem' }}>
                             <label style={{
                                 display: 'flex',
@@ -494,9 +540,9 @@ const JournalEntry = () => {
                                 fontWeight: '600',
                                 fontSize: '0.95rem'
                             }}>
-                                📋 평가 작성 가이드
+                                📝 추가 요청사항
                                 <span style={{ fontSize: '0.75rem', color: '#78350f', fontWeight: 'normal' }}>
-                                    (가장 우선순위가 높은 설정입니다)
+                                    (선택사항 - 선생님만의 스타일을 추가하세요)
                                 </span>
                             </label>
                             <textarea
@@ -535,9 +581,9 @@ const JournalEntry = () => {
                                 fontWeight: '600',
                                 fontSize: '0.95rem'
                             }}>
-                                📄 어투 학습용 파일
+                                📄 내 평가 예시 업로드
                                 <span style={{ fontSize: '0.75rem', color: '#78350f', fontWeight: 'normal' }}>
-                                    (선생님의 이전 평가 예시를 업로드하세요)
+                                    (이전 평가를 올리면 AI가 선생님 말투를 배워요)
                                 </span>
                             </label>
 
