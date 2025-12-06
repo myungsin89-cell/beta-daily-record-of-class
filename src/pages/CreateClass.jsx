@@ -93,6 +93,16 @@ const CreateClass = () => {
                                 <option value="8">8반</option>
                                 <option value="9">9반</option>
                                 <option value="10">10반</option>
+                                <option value="11">11반</option>
+                                <option value="12">12반</option>
+                                <option value="13">13반</option>
+                                <option value="14">14반</option>
+                                <option value="15">15반</option>
+                                <option value="16">16반</option>
+                                <option value="17">17반</option>
+                                <option value="18">18반</option>
+                                <option value="19">19반</option>
+                                <option value="20">20반</option>
                             </select>
                         </div>
                     </div>
