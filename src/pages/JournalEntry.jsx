@@ -79,6 +79,8 @@ const JournalEntry = () => {
     const [revisionRequest, setRevisionRequest] = useState('');
     const [isEvaluationExpanded, setIsEvaluationExpanded] = useState(true);
     const [aiError, setAiError] = useState('');
+    const [showJournalSelectModal, setShowJournalSelectModal] = useState(false);
+    const [selectedJournalIds, setSelectedJournalIds] = useState([]);
 
     // Auto-save states
     const [lastSaved, setLastSaved] = useState(null);
@@ -237,18 +239,36 @@ const JournalEntry = () => {
         }
     };
 
-    const handleGenerateEvaluation = async (withRevision = false) => {
+    // Open journal selection modal or generate directly
+    const handleGenerateEvaluation = (withRevision = false) => {
+        if (!selectedStudentId) return;
+
+        const studentJournals = journals[selectedStudentId] || [];
+
+        // If no journals exist, generate directly
+        if (studentJournals.length === 0) {
+            executeGenerateEvaluation([], withRevision);
+            return;
+        }
+
+        // If journals exist, open modal for selection
+        setSelectedJournalIds(studentJournals.map(j => j.id)); // Select all by default
+        setShowJournalSelectModal(true);
+    };
+
+    // Execute AI evaluation generation with selected journals
+    const executeGenerateEvaluation = async (selectedJournals, withRevision = false) => {
         if (!selectedStudentId) return;
 
         setIsGenerating(true);
         setAiError('');
+        setShowJournalSelectModal(false); // Close modal
         try {
             const student = students.find(s => s.id === selectedStudentId);
-            const studentJournals = journals[selectedStudentId] || [];
 
             const evaluation = await generateStudentEvaluation(
                 student.name,
-                studentJournals,
+                selectedJournals,
                 SYSTEM_INSTRUCTIONS,
                 customInstructions,
                 referenceFileContent, // Pass file content instead of filename
@@ -1018,6 +1038,171 @@ const JournalEntry = () => {
                     )}
                 </div>
             </div >
+
+            {/* Journal Selection Modal */}
+            {showJournalSelectModal && (
+                <div className="modal-overlay" onClick={() => setShowJournalSelectModal(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+                        <div className="modal-header">
+                            <h2>📝 반영할 누가기록 선택</h2>
+                            <button className="modal-close" onClick={() => setShowJournalSelectModal(false)}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ marginBottom: '1rem', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                                AI 평가에 반영할 누가기록을 선택해주세요. (선택하지 않은 기록은 평가에 포함되지 않습니다)
+                            </p>
+
+                            {/* Select/Deselect All Buttons */}
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => {
+                                        const studentJournals = journals[selectedStudentId] || [];
+                                        setSelectedJournalIds(studentJournals.map(j => j.id));
+                                    }}
+                                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}
+                                >
+                                    ✓ 전체 선택
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setSelectedJournalIds([])}
+                                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}
+                                >
+                                    ✗ 전체 해제
+                                </Button>
+                            </div>
+
+                            {/* Journal List */}
+                            <div style={{
+                                maxHeight: '400px',
+                                overflowY: 'auto',
+                                border: '1px solid var(--color-border)',
+                                borderRadius: 'var(--radius-md)',
+                                padding: '0.5rem'
+                            }}>
+                                {sortedDateGroups.map(({ dateKey, entries }) => (
+                                    <div key={dateKey} style={{ marginBottom: '1rem' }}>
+                                        <div style={{
+                                            fontWeight: '600',
+                                            color: 'var(--color-primary)',
+                                            marginBottom: '0.5rem',
+                                            padding: '0.5rem',
+                                            backgroundColor: 'var(--color-background)',
+                                            borderRadius: 'var(--radius-sm)',
+                                            fontSize: '0.9rem'
+                                        }}>
+                                            📅 {dateKey}
+                                        </div>
+                                        <div style={{ paddingLeft: '0.5rem' }}>
+                                            {entries.map((entry) => (
+                                                <label
+                                                    key={entry.id}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'flex-start',
+                                                        gap: '0.75rem',
+                                                        padding: '0.75rem',
+                                                        marginBottom: '0.5rem',
+                                                        backgroundColor: selectedJournalIds.includes(entry.id)
+                                                            ? '#f0f9ff'
+                                                            : 'white',
+                                                        border: `2px solid ${selectedJournalIds.includes(entry.id)
+                                                            ? 'var(--color-primary)'
+                                                            : 'var(--color-border)'}`,
+                                                        borderRadius: 'var(--radius-md)',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s ease'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        if (!selectedJournalIds.includes(entry.id)) {
+                                                            e.currentTarget.style.backgroundColor = '#f8fafc';
+                                                        }
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        if (!selectedJournalIds.includes(entry.id)) {
+                                                            e.currentTarget.style.backgroundColor = 'white';
+                                                        }
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedJournalIds.includes(entry.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedJournalIds([...selectedJournalIds, entry.id]);
+                                                            } else {
+                                                                setSelectedJournalIds(selectedJournalIds.filter(id => id !== entry.id));
+                                                            }
+                                                        }}
+                                                        style={{
+                                                            width: '18px',
+                                                            height: '18px',
+                                                            marginTop: '0.15rem',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    />
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{
+                                                            fontSize: '0.8rem',
+                                                            color: 'var(--color-text-muted)',
+                                                            marginBottom: '0.25rem'
+                                                        }}>
+                                                            {formatTime(entry.date)}
+                                                        </div>
+                                                        <div style={{
+                                                            fontSize: '0.9rem',
+                                                            color: 'var(--color-text)',
+                                                            lineHeight: '1.5'
+                                                        }}>
+                                                            {entry.content}
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                marginTop: '1.5rem',
+                                paddingTop: '1rem',
+                                borderTop: '1px solid var(--color-border)'
+                            }}>
+                                <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+                                    선택된 기록: <strong style={{ color: 'var(--color-primary)' }}>
+                                        {selectedJournalIds.length}개
+                                    </strong>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                    <Button
+                                        variant="secondary"
+                                        onClick={() => setShowJournalSelectModal(false)}
+                                    >
+                                        취소
+                                    </Button>
+                                    <Button
+                                        variant="primary"
+                                        onClick={() => {
+                                            const studentJournals = journals[selectedStudentId] || [];
+                                            const selected = studentJournals.filter(j => selectedJournalIds.includes(j.id));
+                                            executeGenerateEvaluation(selected, false);
+                                        }}
+                                        disabled={selectedJournalIds.length === 0}
+                                    >
+                                        ✨ 선택한 기록으로 생성
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
