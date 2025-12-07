@@ -17,6 +17,58 @@ const getGenAI = async () => {
     return new GoogleGenerativeAI(apiKey);
 };
 
+// Model priority list - try in this order
+const MODEL_PRIORITY = ['gemini-2.0-flash-exp', 'gemini-2.5-flash'];
+
+// Get last working model from localStorage
+const getLastWorkingModel = () => {
+    return localStorage.getItem('last_working_gemini_model') || MODEL_PRIORITY[0];
+};
+
+// Save successful model to localStorage
+const saveWorkingModel = (model) => {
+    localStorage.setItem('last_working_gemini_model', model);
+};
+
+// Try generating content with fallback
+const tryGenerateWithFallback = async (genAI, prompt) => {
+    const lastModel = getLastWorkingModel();
+
+    // First try with last successful model
+    try {
+        const model = genAI.getGenerativeModel({ model: lastModel });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
+    } catch (error) {
+        console.log(`Model ${lastModel} failed, trying fallback...`);
+
+        // Try other models in priority order
+        for (const modelName of MODEL_PRIORITY) {
+            if (modelName === lastModel) continue; // Skip already tried model
+
+            try {
+                console.log(`Trying model: ${modelName}`);
+                const model = genAI.getGenerativeModel({ model: modelName });
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+
+                // Success! Save this model as working
+                saveWorkingModel(modelName);
+                console.log(`Model ${modelName} succeeded, saved as default`);
+
+                return response.text();
+            } catch (fallbackError) {
+                console.log(`Model ${modelName} also failed:`, fallbackError.message);
+                continue;
+            }
+        }
+
+        // All models failed
+        throw error;
+    }
+};
+
 export const generateStudentEvaluation = async (studentName, journalEntries, systemInstructions = '', userInstructions = '', referenceFileContent = '', additionalNotes = '', revisionRequest = '') => {
     try {
         // Get GenAI instance with API key from IndexedDB
@@ -89,12 +141,8 @@ ${revisionRequest && revisionRequest.trim() !== '' ? `## [🔥 수정 요청 사
 5. **절대 'AI 모델입니다' 등의 사족을 붙이지 말고, 바로 평가 내용만 출력하십시오.**
 `;
 
-        // Call Gemini API
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
-        const result = await model.generateContent(fullPrompt);
-        const response = await result.response;
-        const evaluation = response.text();
+        // Call Gemini API with automatic fallback
+        const evaluation = await tryGenerateWithFallback(genAI, fullPrompt);
 
         return evaluation.trim();
 
