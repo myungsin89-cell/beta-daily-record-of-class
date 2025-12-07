@@ -93,30 +93,6 @@ const InstallBanner = ({ isInstallable, onInstall }) => {
                                 </div>
                             </div>
 
-                            <div className="install-guide-section">
-                                <h3>🍎 아이폰 (Safari)</h3>
-                                <div className="install-steps">
-                                    <div className="install-step">
-                                        <span className="step-number">1</span>
-                                        <div className="step-content">
-                                            <strong>화면 하단</strong> 공유 버튼(□↑) 누르기
-                                        </div>
-                                    </div>
-                                    <div className="install-step">
-                                        <span className="step-number">2</span>
-                                        <div className="step-content">
-                                            <strong>"홈 화면에 추가"</strong> 선택
-                                        </div>
-                                    </div>
-                                    <div className="install-step">
-                                        <span className="step-number">3</span>
-                                        <div className="step-content">
-                                            <strong>"추가" 버튼</strong> 누르기
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
                             <div className="install-guide-tip">
                                 💡 <strong>팁:</strong> 설치 후 바탕화면이나 홈 화면에서 바로 실행할 수 있어요!
                             </div>
