@@ -611,23 +611,7 @@ const Settings = () => {
                 <div className="info-grid">
                     <div className="info-item">
                         <span className="info-label">버전</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
-                            <span className="info-value">베타테스트</span>
-                            {needRefresh ? (
-                                <Button
-                                    size="small"
-                                    variant="accent"
-                                    onClick={() => updateServiceWorker()}
-                                    style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem' }}
-                                >
-                                    🔄 업데이트 가능
-                                </Button>
-                            ) : (
-                                <span style={{ fontSize: '0.75rem', color: '#059669', backgroundColor: '#d1fae5', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
-                                    최신 버전
-                                </span>
-                            )}
-                        </div>
+                        <span className="info-value">베타테스트</span>
                     </div>
                     <div className="info-item">
                         <span className="info-label">저장 방식</span>
