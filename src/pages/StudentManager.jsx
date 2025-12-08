@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import { useStudentContext } from '../context/StudentContext';
 import './StudentManager.css';
+
+// localStorage key for draft data
+const DRAFT_KEY = 'student_manager_draft';
 
 const StudentManager = () => {
     const { students, addStudent, addStudents, removeStudent, isLoading } = useStudentContext();
@@ -11,6 +14,29 @@ const StudentManager = () => {
     const [attendanceNumber, setAttendanceNumber] = useState('');
     const [gender, setGender] = useState('남');
     const [uploadMessage, setUploadMessage] = useState('');
+
+    // Load draft from localStorage on mount
+    useEffect(() => {
+        const draft = localStorage.getItem(DRAFT_KEY);
+        if (draft) {
+            try {
+                const { name: draftName, attendanceNumber: draftNum, gender: draftGender } = JSON.parse(draft);
+                if (draftName) setName(draftName);
+                if (draftNum) setAttendanceNumber(draftNum);
+                if (draftGender) setGender(draftGender);
+            } catch (error) {
+                console.error('Failed to load draft:', error);
+            }
+        }
+    }, []);
+
+    // Auto-save draft to localStorage
+    useEffect(() => {
+        if (name || attendanceNumber) {
+            const draft = { name, attendanceNumber, gender };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        }
+    }, [name, attendanceNumber, gender]);
 
     if (isLoading) {
         return <div style={{ padding: '2rem', textAlign: 'center' }}>데이터를 불러오는 중...</div>;
@@ -32,6 +58,9 @@ const StudentManager = () => {
         setAttendanceNumber('');
         setGender('남');
         setUploadMessage('');
+
+        // Clear draft from localStorage after successful submission
+        localStorage.removeItem(DRAFT_KEY);
     };
 
     const handleExcelUpload = (e) => {
