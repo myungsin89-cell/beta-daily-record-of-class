@@ -19,16 +19,29 @@ export const UpdateProvider = ({ children }) => {
             onOfflineReady() {
                 console.log('[UpdateContext] App ready to work offline');
             },
+            onRegistered(registration) {
+                console.log('[UpdateContext] Service Worker registered:', registration);
+            }
         });
 
         setUpdateServiceWorkerFn(() => updateSW);
     }, []);
 
-    const updateServiceWorker = () => {
+    const updateServiceWorker = async () => {
         if (updateServiceWorkerFn) {
-            updateServiceWorkerFn(true);
-            // Reload the page to activate the new service worker
-            window.location.reload();
+            try {
+                console.log('[UpdateContext] Starting update...');
+                await updateServiceWorkerFn(true);
+                console.log('[UpdateContext] Update completed, reloading...');
+                // Small delay to ensure service worker is activated
+                setTimeout(() => {
+                    window.location.reload();
+                }, 100);
+            } catch (error) {
+                console.error('[UpdateContext] Update failed:', error);
+                // Force reload even if update fails
+                window.location.reload();
+            }
         }
     };
 
