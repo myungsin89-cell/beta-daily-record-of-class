@@ -27,6 +27,8 @@ export const UpdateProvider = ({ children }) => {
     const updateServiceWorker = () => {
         if (updateServiceWorkerFn) {
             updateServiceWorkerFn(true);
+            // Reload the page to activate the new service worker
+            window.location.reload();
         }
     };
 
