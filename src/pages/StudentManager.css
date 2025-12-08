@@ -182,3 +182,15 @@
     color: var(--color-text-muted);
     font-weight: 500;
 }
+
+/* 애니메이션 - 성공 알림 */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

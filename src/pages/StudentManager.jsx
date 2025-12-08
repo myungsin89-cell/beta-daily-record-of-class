@@ -14,6 +14,8 @@ const StudentManager = () => {
     const [attendanceNumber, setAttendanceNumber] = useState('');
     const [gender, setGender] = useState('남');
     const [uploadMessage, setUploadMessage] = useState('');
+    const [recentlyAddedIds, setRecentlyAddedIds] = useState([]);
+    const studentListRef = React.useRef(null);
 
     // Load draft from localStorage on mount
     useEffect(() => {
@@ -123,9 +125,31 @@ const StudentManager = () => {
                 // Add all valid students at once
                 if (validStudents.length > 0) {
                     addStudents(validStudents);
+
+                    // Track recently added student IDs for highlighting
+                    const newIds = validStudents.map(s => s.id);
+                    setRecentlyAddedIds(newIds);
+
+                    // Auto-scroll to student list
+                    setTimeout(() => {
+                        if (studentListRef.current) {
+                            studentListRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 100);
+
+                    // Remove highlight after 3 seconds
+                    setTimeout(() => {
+                        setRecentlyAddedIds([]);
+                    }, 3000);
                 }
 
                 setUploadMessage(`✅ ${successCount}명 추가 완료${errorCount > 0 ? `, ${errorCount}명 실패` : ''}`);
+
+                // Auto-hide message after 5 seconds
+                setTimeout(() => {
+                    setUploadMessage('');
+                }, 5000);
+
                 e.target.value = ''; // Reset file input
             } catch (error) {
                 console.error('엑셀 파일 처리 오류:', error);
@@ -211,14 +235,26 @@ const StudentManager = () => {
                     </label>
                 </div>
                 {uploadMessage && (
-                    <p style={{
-                        marginTop: '0.5rem',
-                        fontSize: '0.9rem',
-                        color: uploadMessage.includes('✅') ? '#059669' : '#dc2626',
-                        fontWeight: '500'
+                    <div style={{
+                        marginTop: '1rem',
+                        padding: '1.25rem 1.5rem',
+                        backgroundColor: uploadMessage.includes('✅') ? '#d1fae5' : '#fee2e2',
+                        border: `2px solid ${uploadMessage.includes('✅') ? '#10b981' : '#ef4444'}`,
+                        borderRadius: '12px',
+                        fontSize: '1rem',
+                        color: uploadMessage.includes('✅') ? '#065f46' : '#991b1b',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                        animation: 'slideDown 0.3s ease-out'
                     }}>
-                        {uploadMessage}
-                    </p>
+                        <span style={{ fontSize: '1.5rem' }}>
+                            {uploadMessage.includes('✅') ? '🎉' : '⚠️'}
+                        </span>
+                        <span>{uploadMessage}</span>
+                    </div>
                 )}
                 <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '0.5rem' }}>
                     💡 예시 파일을 다운로드하여 학생 정보를 입력한 후 업로드하세요.
@@ -270,25 +306,31 @@ const StudentManager = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="form-actions">
-                        <div className="form-group" style={{ width: '100%' }}>
-                            <label className="form-label" style={{ visibility: 'hidden' }}>추가</label>
-                            <Button type="submit" variant="primary" style={{ width: '100%', height: '42px' }}>
-                                학생 추가
-                            </Button>
-                        </div>
+                    <div className="form-group">
+                        <label className="form-label" style={{ visibility: 'hidden' }}>추가</label>
+                        <Button type="submit" variant="primary" style={{ width: '100%', height: '42px' }}>
+                            학생 추가
+                        </Button>
                     </div>
                 </form>
             </Card>
 
-            <div className="student-list">
+            <div className="student-list" ref={studentListRef}>
                 {sortedStudents.length === 0 ? (
                     <Card className="col-span-full text-center">
                         <p>등록된 학생이 없습니다. 학생을 추가해주세요.</p>
                     </Card>
                 ) : (
                     sortedStudents.map((student) => (
-                        <Card key={student.id} className="student-card-container">
+                        <Card
+                            key={student.id}
+                            className="student-card-container"
+                            style={{
+                                border: recentlyAddedIds.includes(student.id) ? '3px solid #10b981' : undefined,
+                                boxShadow: recentlyAddedIds.includes(student.id) ? '0 4px 12px rgba(16, 185, 129, 0.3)' : undefined,
+                                transition: 'all 0.3s ease'
+                            }}
+                        >
                             <button
                                 className="student-card-delete-btn"
                                 onClick={() => removeStudent(student.id)}
