@@ -114,6 +114,11 @@ ${referenceFileContent}
 `;
         }
 
+        // Check if user has custom settings
+        const hasCustomSettings = (userInstructions && userInstructions.trim() !== '') ||
+            (referenceFileContent && referenceFileContent.trim() !== '') ||
+            (revisionRequest && revisionRequest.trim() !== '');
+
         // Build the full prompt - Structure for better adherence
         let fullPrompt = `
 ${systemInstructions}
@@ -133,10 +138,12 @@ ${revisionRequest && revisionRequest.trim() !== '' ? `## [🔥 수정 요청 사
 
 ---
 
-## [작성 지침 (재확인)]
+## [작성 지침 (최종 확인)]
 1. 위 '누가기록'과 '추가 특이사항', '사용자 추가 요청사항', '수정 요청 사항'을 모두 종합하여 평가를 작성하십시오.
 2. **분량은 공백 포함 300자 내외로 작성하십시오.** (너무 짧으면 안 됩니다.)
-3. 문체는 '~함', '~임' 등의 개조식 종결어를 사용하십시오.
+${hasCustomSettings ?
+                `3. **사용자가 요청한 스타일과 형식을 최우선으로 따르십시오.** 기본 지침과 충돌 시, 사용자 요청사항을 우선 적용합니다.` :
+                `3. 문체는 '~함', '~임' 등의 개조식 종결어를 사용하십시오.`}
 4. 학생의 장점을 부각하되, 개선점은 발전 가능성으로 표현하십시오.
 5. **절대 'AI 모델입니다' 등의 사족을 붙이지 말고, 바로 평가 내용만 출력하십시오.**
 `;
